@@ -1,0 +1,126 @@
+
+configfile: "../../config/config.yaml"
+
+## Read lists
+import pandas as pd
+
+df = pd.read_csv(config["list_studies"])
+LIST_STUDIES = df.Study.tolist()
+
+df = pd.read_csv(config["list_rois_primary"])
+LIST_ROIS = df.Index.tolist()
+
+###################################
+## Function definitions
+def get_centile_files(wildcards):
+    '''
+    Returns a list of centile csv files for all rois for a specific study
+    '''
+    cent_files = ['../../data/centiles/' + wildcards.ctype + '/centiles_per_roi/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_ROIS]
+    return cent_files
+
+def get_centile_files_from_file(wildcards):
+    '''
+    Returns a list of centile csv files for all rois for a specific study
+    '''
+    list_in = '../../data/centiles/c_' + wildcards.ctype + '/data_selrois/NiChartData_' + wildcards.dtype + '.csv'
+    LIST_CURR_ROIS = pd.read_csv(list_in).columns[2:]
+    cent_files = ['../../data/centiles/c_' + wildcards.ctype + '/centiles_single/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_CURR_ROIS]
+    return cent_files
+
+OUT_ROI_TYPES = ['raw', 'normICV']
+OUT_MDL_TYPES = ['raw_singleROI_combatAgeSexICV', 
+                 'raw_compositeROI_combatAgeSexICV', 
+                 'normICV_singleROI_combatAgeSex', 
+                 'normICV_compositeROI_combatAgeSex', 
+                 'normICV_singleROI_combatAgeSexICV', 
+                 'normICV_compositeROI_combatAgeSexICV']
+OUT_MDL_TYPES = ['raw_singleROI_combatAgeSexICV', 
+                 'normICV_singleROI_combatAgeSex']
+OUT_SUFF =  OUT_ROI_TYPES + OUT_MDL_TYPES
+
+
+
+###################################
+## Rules
+rule ALL:
+    #input:"../../data/centiles/NiChartData_MRIDAgeDLMUSERaw_cSampleBlsaShip_primaryROI_varGM.csv"
+    #input:"../../data/centiles/c_BLSA-SHIP/data_selrois/NiChartData_raw.csv"
+    #input:"../../data/centiles/c_BLSA-SHIP/centiles_per_roi/NiChartData_raw_varGM.csv"
+    #input:"../../data/centiles/c_BLSA-SHIP/data_selrois/NiChartData_raw.csv"
+    #input:expand("../../data/centiles/c_BLSA-SHIP/data_selrois/NiChartData_{dtype}.csv", dtype = OUT_SUFF)
+    input:expand("../../data/centiles/c_BLSA-SHIP/centiles_combined/NiChartData_{dtype}_centiles.csv", dtype = OUT_SUFF)
+
+rule select_sample_centile:
+    '''
+    Select MRID and Age for the specific centile sample
+    '''
+    input:
+        demog="../../data/data_prep/DLMUSE_raw/data_combined/NiChartData.csv",
+        sample="../../data/samples/sample_centiles_{ctype}_train.csv",
+    output:
+        "../../data/centiles/c_{ctype}/data/sample.csv"
+    params:
+        in_vars = 'MRID,Age'
+    shell:
+        "echo python utils/util_select_centile_sample.py {input} {params} {output}; "    
+        "python utils/util_select_centile_sample.py {input} {params} {output}"    
+
+rule merge_rois:
+    '''
+    Merge SPARE sample to DLMUSE data
+    '''
+    input:
+        sample="../../data/centiles/c_{ctype}/data/sample.csv",
+        data="../../data/data_consolidated/NiChartData_{dtype}.csv",
+    output:
+        "../../data/centiles/c_{ctype}/data/NiChartData_{dtype}.csv"
+    params:
+        key_var = 'MRID'
+    shell:
+        "echo python utils/util_merge_two.py {input} {params} {output}; "
+        "python utils/util_merge_two.py {input} {params} {output}"
+
+rule select_rois:
+    '''
+    Select roi values
+    '''
+    input:
+        data="../../data/centiles/c_{ctype}/data/NiChartData_{dtype}.csv",
+        roi="../../config/list_MUSE_primaryROI.csv",
+    output:
+        "../../data/centiles/c_{ctype}/data_selrois/NiChartData_{dtype}.csv"
+    params:
+        in_vars = 'MRID,Age',
+    shell:
+        "python utils/util_select_vars.py {input} {params} {output}"    
+    
+rule calc_centiles_single_var:
+    input:
+        "../../data/centiles/c_{ctype}/data_selrois/NiChartData_{dtype}.csv"
+    output:
+        temp("../../data/centiles/c_{ctype}/centiles_single/NiChartData_{dtype}_var{var}.csv")
+    params:
+        cent_vals='5,25,50,75,95',
+        bin_size='1',
+    shell:
+        "echo Rscript ./utils/util_calc_centiles.r -i {input} -o {output} "
+        "-t {wildcards.var} -c {params.cent_vals} -b {params.bin_size} -v; "
+        "Rscript ./utils/util_calc_centiles.r -i {input} -o {output} "
+        "-t {wildcards.var} -c {params.cent_vals} -b {params.bin_size} -v"
+
+rule combine_centiles:
+    input:
+        get_centile_files_from_file
+    output:
+        protected("../../data/centiles/c_{ctype}/centiles_combined/NiChartData_{dtype}_centiles.csv")
+    shell:
+        "bash ./utils/util_combine_centiles.sh {output} {input}"
+
+rule copy_centiles:
+    input:
+        "../../data/centiles/centiles-{csample}_combined.csv"
+    output:
+        protected("../../models/centiles/centiles-{csample}_combined.csv")
+    shell:
+        "bash ./utils/util_combine_centiles.sh {output} {input}"

@@ -1,0 +1,14 @@
+.*
+!/.gitignore
+tmp/
+Tmp/
+temp/
+Temp/
+data/
+input/
+models/
+resources/
+slurm_logs/
+.snakemake/
+
+

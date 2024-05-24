@@ -1,0 +1,22 @@
+
+configfile: "config/config.yaml"
+
+LIST_FOLDS = [0, 1, 2, 3, 4]
+
+###################################
+## Function definitions
+
+###################################
+## Rules
+rule ALL:
+    input:expand("../../data/ModelSurrealGAN/model{foldno}", foldno = LIST_FOLDS)
+
+rule surrealgan_train:
+    input:
+        data="../../data/TestSurrealGAN/train_MUSE_ROI_file.csv",
+        covar="../../data/TestSurrealGAN/train_MUSE_covariate_file.csv"
+    output:
+        "../../data/ModelSurrealGAN/model{foldno}"
+    shell:
+        "echo python utils/util_surrealgan_train.py {input} {wildcards.foldno} {output}; "
+        "python utils/util_surrealgan_train.py {input} {wildcards.foldno} {output}"

@@ -1,0 +1,164 @@
+
+configfile: "../../config/config.yaml"
+
+localrules: select_sample_spare, merge_rois, copy_model, split_train_test
+
+## Read lists
+import pandas as pd
+
+df = pd.read_csv(config["list_studies"])
+LIST_STUDIES = df.Study.tolist()
+
+df = pd.read_csv(config["list_rois_primary"])
+LIST_ROIS = df.Index.tolist()
+
+#df = pd.read_csv(config["list_SPARE_models"])
+#LIST_SPARE_MODELS = df.Model.tolist()
+
+
+OUT_ROI_TYPES = ['raw', 'normICV']
+OUT_MDL_TYPES = ['raw_singleROI_combatAgeSexICV', 
+                 'raw_compositeROI_combatAgeSexICV', 
+                 'normICV_singleROI_combatAgeSex', 
+                 'normICV_compositeROI_combatAgeSex', 
+                 'normICV_singleROI_combatAgeSexICV', 
+                 'normICV_compositeROI_combatAgeSexICV']
+OUT_MDL_TYPES = ['raw_singleROI_combatAgeSexICV', 
+                 'normICV_singleROI_combatAgeSex']
+OUT_SUFF =  OUT_ROI_TYPES + OUT_MDL_TYPES
+
+## Classification models
+#SPARE_C_MDL = ['AD-ISTAG', 'V-Diabetes', 'V-Hypertension', 'V-Smoking']
+SPARE_C_MDL = ['AD-ISTAG', 'V-Depression', 'V-Diabetes', 'V-Hypertension', 'V-Hyperlipidemia', 'V-Smoking']
+
+## Regression models
+#SPARE_R_MDL = ['V-BMI', 'V-TauCSF', 'V-MMSE']
+SPARE_R_MDL = ['BA-ISTAG', 'V-Age', 'V-BMI', 'V-FluidIntelligence', 'V-TauCSF']
+
+
+###################################
+## Function definitions
+
+###################################
+## Rules
+rule ALL:
+    #
+    ## Rule to run all combinations
+    #input:expand("../../models/SPARE/SPARE_{stype}_NiChartData_{dtype}_model.pkl.gz", stype = OUT_SPARE_TYPES, dtype = OUT_SUFF)
+    #
+    # Rule to run on a single combination as a test
+    #input:expand("../../models/SPARE/SPARE_{stype}_NiChartData_{dtype}_model.pkl.gz", stype = ['AD-ISTAG'], dtype = ['normICV_singleROI_combatAgeSex'])
+    #
+    #
+    #input:expand("../../data/SPARE/s_C_{stype}/pred_traintest/NiChartData_{dtype}_pred.csv", stype = SPARE_C_MDL, dtype = OUT_SUFF)
+    input:expand("../../data/SPARE/s_R_{stype}/pred_traintest/NiChartData_{dtype}_pred.csv", stype = SPARE_R_MDL, dtype = OUT_SUFF)
+    
+    
+
+rule select_sample_spare:
+    '''
+    Select SPARE sample (for AD, BMI, etc...)
+      Merge with demog data to include columns used in SPARE training (Age, Sex, ...)
+    '''
+    input:
+        demog="../../data/data_prep/DLMUSE_raw/data_combined/NiChartData.csv",
+        sample="../../data/samples/sample_SPARE_{stype}_all.csv",
+    output:
+        "../../data/SPARE/s_{stype}/data/sample.csv"
+    params:
+        in_vars = 'MRID,Age,Sex'
+    shell:
+        "echo python utils/util_select_spare_sample.py {input} {params} {output}; "    
+        "python utils/util_select_spare_sample.py {input} {params} {output}"    
+
+rule merge_rois:
+    '''
+    Merge SPARE sample to DLMUSE data
+    '''
+    input:
+        sample="../../data/SPARE/s_{stype}/data/sample.csv",
+        data="../../data/data_consolidated/NiChartData_{dtype}.csv",
+    output:
+        "../../data/SPARE/s_{stype}/data/NiChartData_{dtype}.csv"
+    params:
+        key_var = 'MRID'
+    shell:
+        "echo python utils/util_merge_two.py {input} {params} {output}; "
+        "python utils/util_merge_two.py {input} {params} {output}"
+
+rule sparesvm_train_on_all:
+    '''
+    Train SPARE model
+    '''
+    input:
+        "../../data/SPARE/s_{stype}/data/NiChartData_{dtype}.csv"
+    output:
+        "../../data/SPARE/s_{stype}/models/NiChartData_{dtype}_model.pkl.gz"
+    params:
+        vkey='MRID',
+        vtarget='Target',
+    shell:
+        "echo spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {params.vtarget} "
+        "-mt SVM -k linear -pg 1; "
+        "spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {params.vtarget} "
+        "-mt SVM -k linear -pg 1"
+        
+rule copy_model:
+    '''
+    Copy model to models folder
+    '''
+    input:
+        "../../data/SPARE/s_{stype}/models/NiChartData_{dtype}_model.pkl.gz"
+    output:
+        "../../models/SPARE/SPARE_{stype}_NiChartData_{dtype}_model.pkl.gz"
+    shell:
+        "cp {input} {output}"
+        
+rule split_train_test:
+    '''
+    Split spare sample all to train test
+    '''
+    input:
+        "../../data/SPARE/s_{stype}/data/NiChartData_{dtype}.csv"
+    output:
+        "../../data/SPARE/s_{stype}/data_traintest/NiChartData_{dtype}_train.csv",
+        "../../data/SPARE/s_{stype}/data_traintest/NiChartData_{dtype}_test.csv"        
+    params:
+        strat_vars = 'Sex,Target',
+        test_ratio = '0.4'
+    shell:
+        "echo python utils/util_split_train_test.py {input} {params} {output}; "
+        "python utils/util_split_train_test.py {input} {params} {output}"
+
+rule sparesvm_train_on_train:
+    '''
+    Train SPARE model using the split train sample
+    '''
+    input:
+        "../../data/SPARE/s_{stype}/data_traintest/NiChartData_{dtype}_train.csv"
+    output:
+        "../../data/SPARE/s_{stype}/models_traintest/NiChartData_{dtype}_model.pkl.gz"
+    params:
+        vkey='MRID',
+        vtarget='Target',
+    shell:
+        "echo spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {params.vtarget} "
+        "-mt SVM -k linear -pg 1; "
+        "spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {params.vtarget} "
+        "-mt SVM -k linear -pg 1"
+
+rule sparesvm_test_on_test:
+    '''
+    Test SPARE model using the split test sample
+    '''
+    input:
+        data="../../data/SPARE/s_{stype}/data_traintest/NiChartData_{dtype}_test.csv",
+        mdl="../../data/SPARE/s_{stype}/models_traintest/NiChartData_{dtype}_model.pkl.gz"
+    output:
+        csv="../../data/SPARE/s_{stype}/pred_traintest/NiChartData_{dtype}_pred.csv"
+    shell:
+        "echo spare_score -a test -i {input.data} -m {input.mdl} -o {output.csv}; "
+        "spare_score -a test -i {input.data} -m {input.mdl} -o {output.csv}"
+
+
+

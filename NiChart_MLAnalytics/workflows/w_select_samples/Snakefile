@@ -1,0 +1,43 @@
+
+report: "report/workflow.rst"
+
+configfile: "../../config/config.yaml"
+
+###################################
+## Rules
+rule ALL:
+    #input:"../../data/data_subsampled/UKBIOBANK-B1_selIDs.csv"
+    input:expand("../../data/data_subsampled/UKBIOBANK-B1_{suffix}.csv", suffix = ['DLMUSE', 'ISTAG'])
+
+rule select_sample_ukbb:
+    input:
+        "../../data/DLMUSE/UKBIOBANK_DLMUSE.csv",
+    output:
+        "../../data/data_subsampled/UKBIOBANK-B1_selIDs.csv"
+    params:
+        num_sample = '8000',
+        out_vars = 'MRID',
+    shell:
+        "python ./utils/util_subsample_data.py {input} {params} {output}"
+
+rule select_ukbb_istag:
+    input:
+        in_csv="../../data/data_ISTAGING/UKBIOBANK_ISTAG.csv",
+        in_list="../../data/data_subsampled/UKBIOBANK-B1_selIDs.csv"
+    output:
+        "../../data/data_subsampled/UKBIOBANK-B1_ISTAG.csv"
+    params:
+        key_var = 'MRID',
+    shell:
+        "python ./utils/util_filter_to_subsampled.py {input} {params} {output}"
+
+rule select_ukbb_dlmuse:
+    input:
+        in_csv="../../data/DLMUSE/UKBIOBANK_DLMUSE.csv",
+        in_list="../../data/data_subsampled/UKBIOBANK-B1_selIDs.csv"
+    output:
+        "../../data/data_subsampled/UKBIOBANK-B1_DLMUSE.csv"
+    params:
+        key_var = 'MRID',
+    shell:
+        "python ./utils/util_filter_to_subsampled.py {input} {params} {output}"
