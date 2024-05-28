@@ -22,11 +22,11 @@ def rename_muse_rois(in_csv, in_dict, out_csv):
     dfd.Index = dfd.Index.astype(str)
     vdict = dfd.set_index('Index')['Name'].to_dict()
 
-    # Rename variables and rename them (ROI index renamed with ROI name)
+    # Rename ROIs
     df_out = df.rename(columns = vdict)
-    
-    # Remove REPEAT muse ROIs
-    df_out = df_out[df_out.columns[df_out.columns.str.contains('_REPEAT')==False]]
+
+    # Drop duplicate columns in MUSE ROIs (ROIs repeated in single and composite ROI list)
+    df_out = df_out.loc[:, df_out.columns.duplicated()==False]
 
     # Write out file
     df_out.to_csv(out_csv, index=False)
