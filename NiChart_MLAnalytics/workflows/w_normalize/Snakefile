@@ -1,4 +1,5 @@
 
+## This flag indicates rules that will not be submitted as slurm jobs
 localrules: rename_muse_rois, merge_data, concat_studies, select_roi_vars, select_demog_vars, corr_icv, merge_demog_and_data, select_harmonization_sample, combat_apply,  remove_combat_suffix, select_harmonization_output_vars, copy_harmonization_model, copy_harmonized_data
     
 report: "report/workflow.rst"
@@ -20,7 +21,7 @@ LIST_ROIS = df.Index.tolist()
 ###################################
 ## Rules
 rule ALL:
-    input:expand("../../data/data_consolidated/NiChart_DLMUSE_harmonized_{dtype}_r{rtype}_h{hdata}.csv", rtype = ['shortROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) + expand("../../models/harmonization/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz", rtype = ['shortROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) 
+    input:expand("../../data/data_consolidated/NiChart_DLMUSE_harmonized_{dtype}_r{rtype}_h{hdata}.csv", rtype = ['singleROI', 'compositeROI', 'allROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) + expand("../../models/harmonization/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz", rtype = ['singleROI', 'compositeROI', 'allROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) 
     
     
 #################################  
@@ -183,7 +184,7 @@ rule combat_train:
         vcat='Sex',
         vspline='Age'
     output:
-        mdl="../../data/harmonization/h{hdata}/combatModel_NiChart_{dtype}_r{rtype}.pkl.gz",
+        mdl="../../data/harmonization/h{hdata}/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}.pkl.gz",
         csv=temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut.csv")
     resources:
         mem_mb=16000
@@ -199,7 +200,7 @@ rule combat_apply:
     '''    
     input:
         data="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}.csv",
-        mdl="../../data/harmonization/h{hdata}/combatModel_NiChart_{dtype}_r{rtype}.pkl.gz"
+        mdl="../../data/harmonization/h{hdata}/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}.pkl.gz"
     output:
         csv=temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}_combatOut.csv")  
     resources:
@@ -247,7 +248,7 @@ rule copy_harmonization_model:
     Copy harmonization model to models
     '''        
     input:
-        "../../data/harmonization/h{hdata}/combatModel_NiChart_{dtype}_r{rtype}.pkl.gz"
+        "../../data/harmonization/h{hdata}/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}.pkl.gz"
     output:
         "../../models/harmonization/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz"
     resources:
