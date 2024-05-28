@@ -20,7 +20,7 @@ LIST_ROIS = df.Index.tolist()
 ###################################
 ## Rules
 rule ALL:
-    input:expand("../../data/data_consolidated/NiChart_harmonized_{dtype}_r{rtype}_h{hdata}_combatOut.csv", rtype = ['shortROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) 
+    input:expand("../../data/data_consolidated/NiChart_DLMUSE_harmonized_{dtype}_r{rtype}_h{hdata}.csv", rtype = ['shortROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) + expand("../../models/harmonization/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz", rtype = ['shortROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) 
     
     
 #################################  
@@ -122,7 +122,7 @@ rule corr_icv:
         exclude_vars = 'MRID',
         suffix = 'NONE'
     output:
-        "../../data/data_consolidated/NiChart_DLMUSE_{corr_type}.csv"
+        "../../data/data_consolidated/NiChart_DLMUSE_{corr_type,[A-Za-z]+}.csv"
     resources:
         mem_mb=8000
     shell:
@@ -143,7 +143,7 @@ rule merge_demog_and_data:
     params:
         key_var="MRID"
     output:
-        "../../data/harmonization/prep/NiChart_DLMUSE+Demog_{dtype}.csv",
+        temp("../../data/harmonization/prep/NiChart_DLMUSE+Demog_{dtype}.csv"),
     resources:
         mem_mb=8000
     shell:
@@ -163,7 +163,7 @@ rule select_harmonization_sample:
     params:
         vars='MRID,Age,Sex,SITE,ICV',
     output:
-        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}.csv"
+        temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -183,7 +183,7 @@ rule combat_train:
         vcat='Sex',
         vspline='Age'
     output:
-        mdl="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatModel.pkl.gz",
+        mdl="../../data/harmonization/h{hdata}/combatModel_NiChart_{dtype}_r{rtype}.pkl.gz",
         csv=temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut.csv")
     resources:
         mem_mb=16000
@@ -198,10 +198,10 @@ rule combat_apply:
     Apply combat harmonization model to calculate harmonized values
     '''    
     input:
-        data="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}.csv",
-        mdl="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatModel.pkl.gz"
+        data="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}.csv",
+        mdl="../../data/harmonization/h{hdata}/combatModel_NiChart_{dtype}_r{rtype}.pkl.gz"
     output:
-        csv=temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut.csv")  
+        csv=temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}_combatOut.csv")  
     resources:
         mem_mb=16000
     shell:
@@ -214,11 +214,11 @@ rule remove_combat_suffix:
     FIXME: Ideally combat should be run with an arg to create output var names without a suffix
     '''        
     input:
-        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut.csv",
+        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}_combatOut.csv",
     params:
         rm_suff='_HARM'
     output:
-        temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut_nosuffix.csv")
+        temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}_combatOut_nosuffix.csv")
     resources:
         mem_mb=8000
     shell:
@@ -230,12 +230,12 @@ rule select_harmonization_output_vars:
     Select final variables from the harmonized data (MRID + ICV + ROI names)
     '''        
     input:
-        data="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut_nosuffix.csv",
+        data="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}_combatOut_nosuffix.csv",
         rois="../../config/list_MUSE_{rtype}.csv"
     params:
         vars='MRID,ICV',
     output:
-        csv="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut_nosuffix_rois.csv"
+        csv=temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}_combatOut_nosuffix_rois.csv")
     resources:
         mem_mb=8000
     shell:
@@ -247,9 +247,9 @@ rule copy_harmonization_model:
     Copy harmonization model to models
     '''        
     input:
-        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatModel.pkl.gz"
+        "../../data/harmonization/h{hdata}/combatModel_NiChart_{dtype}_r{rtype}.pkl.gz"
     output:
-        "../../models/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatModel.pkl.gz"
+        "../../models/harmonization/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz"
     resources:
         mem_mb=8000
     shell:
@@ -260,13 +260,12 @@ rule copy_harmonized_data:
     Copy harmonized data
     '''        
     input:
-        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut_nosuffix_rois.csv"
+        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_all_combatOut_nosuffix_rois.csv"
     output:
-        "../../data/data_consolidated/NiChart_harmonized_{dtype}_r{rtype}_h{hdata}_combatOut.csv"
+        "../../data/data_consolidated/NiChart_DLMUSE_harmonized_{dtype}_r{rtype}_h{hdata}.csv"
     resources:
         mem_mb=8000
     shell:
         "cp {input} {output}"
-        
 
 
