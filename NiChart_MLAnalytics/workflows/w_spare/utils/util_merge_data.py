@@ -14,7 +14,9 @@ def merge_data(out_csv, key_var, list_in_csv):
         df_tmp = df_tmp[df_tmp[key_var].isna()==False]
 
         # Merge DataFrames
-        df_out = df_out.merge(df_tmp, on = key_var)
+        #  Duplicate columns are discarded
+        df_out = df_out.merge(df_tmp, on = key_var, suffixes = ['', '_tmpremovedupl'])
+        df_out = df_out[df_out.columns[df_out.columns.str.contains('_tmpremovedupl')==False]]
 
     # Write out file
     df_out.to_csv(out_csv, index=False)

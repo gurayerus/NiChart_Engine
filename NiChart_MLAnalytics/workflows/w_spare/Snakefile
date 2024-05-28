@@ -41,121 +41,148 @@ SPARE_R_MDL = ['BA']
 rule ALL:
     #
     ## Rule to run all combinations
-    #input:expand("../../models/SPARE/SPARE_{stype}_NiChartData_{dtype}_model.pkl.gz", stype = OUT_SPARE_TYPES, dtype = OUT_SUFF)
+    #input:expand("../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz", stype = OUT_SPARE_TYPES, dtype = OUT_SUFF)
     #
     # Rule to run on a single combination as a test
-    #input:expand("../../models/SPARE/SPARE_{stype}_NiChartData_{dtype}_model.pkl.gz", stype = ['AD-ISTAG'], dtype = ['normICV_singleROI_combatAgeSex'])
+    #input:expand("../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz", stype = ['AD-ISTAG'], dtype = ['normICV_singleROI_combatAgeSex'])
     #
     #
-    #input:expand("../../data/SPARE/s_C_{stype}/pred_traintest/NiChartData_{dtype}_pred.csv", stype = SPARE_C_MDL, dtype = OUT_SUFF)
-    input:expand("../../data/SPARE/s_R_{stype}/pred_traintest/NiChartData_{dtype}_pred.csv", stype = SPARE_R_MDL, dtype = OUT_SUFF)
+    #input:expand("../../data/SPARE/s_C_{stype}/pred_traintest/NiChart_DLMUSE_{dtype}_pred.csv", stype = SPARE_C_MDL, dtype = OUT_SUFF)
+    #input:expand("../../data/SPARE/s_R_{stype}/pred_traintest/NiChart_DLMUSE_{dtype}_pred.csv", stype = SPARE_R_MDL, dtype = OUT_SUFF)
+    #
+    #
+    #input:expand("../../data/SPARE/s{stype}/pred_traintest/NiChart_DLMUSE_{dtype}_pred.csv", stype = SPARE_R_MDL, dtype = OUT_SUFF)
+    #input:"../../data/SPARE/sAD/NiChart_DLMUSE_raw_all.csv"
+    #input:"../../data/SPARE/sAD/data/NiChart_DLMUSE_raw_train.csv"
+    #input:"../../data/SPARE/sAge/data/NiChart_DLMUSE_harmonized_normICV_rsingleROI_hISTAG_train.csv"
+    input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rsingleROI_hISTAG_pred.csv"
     
     
+#################################    
+## SPARE
 
-rule select_sample_spare:
+rule merge_demog_and_data:
     '''
-    Select SPARE sample (for AD, BMI, etc...)
-      Merge with demog data to include columns used in SPARE training (Age, Sex, ...)
+    Merge demog and data
     '''
     input:
-        demog="../../data/data_prep/DLMUSE_raw/data_combined/NiChartData.csv",
-        sample="../../data/samples/sample_SPARE_{stype}_all.csv",
-    output:
-        "../../data/SPARE/s_{stype}/data/sample.csv"
+        demog="../../data/data_consolidated/NiChart_demog.csv",
+        data="../../data/data_consolidated/NiChart_DLMUSE_{dtype}.csv",
     params:
-        in_vars = 'MRID,Age,Sex'
-    shell:
-        "echo python utils/util_select_spare_sample.py {input} {params} {output}; "    
-        "python utils/util_select_spare_sample.py {input} {params} {output}"    
-
-rule merge_rois:
-    '''
-    Merge SPARE sample to DLMUSE data
-    '''
-    input:
-        sample="../../data/SPARE/s_{stype}/data/sample.csv",
-        data="../../data/data_consolidated/NiChartData_{dtype}.csv",
+        key_var="MRID"
     output:
-        "../../data/SPARE/s_{stype}/data/NiChartData_{dtype}.csv"
-    params:
-        key_var = 'MRID'
+        "../../data/SPARE/prep/NiChart_DLMUSE+Demog_{dtype}.csv",
+    resources:
+        mem_mb=8000
     shell:
-        "echo python utils/util_merge_two.py {input} {params} {output}; "
+        "echo python utils/util_merge_two.py {input} {params} {output};"
         "python utils/util_merge_two.py {input} {params} {output}"
 
-rule sparesvm_train_on_all:
+rule select_spare_sample:
     '''
-    Train SPARE model
+    Select spare sample
+    - Select samples (from the centiles sample list)
+    - Select variables (a set of input variables + ROI names from list)
     '''
     input:
-        "../../data/SPARE/s_{stype}/data/NiChartData_{dtype}.csv"
-    output:
-        "../../data/SPARE/s_{stype}/models/NiChartData_{dtype}_model.pkl.gz"
+        sample="../../data/samples/sample_SPARE_{stype}_all.csv",
+        data="../../data/SPARE/prep/NiChart_DLMUSE+Demog_{dtype}.csv",
+        rois="../../config/list_MUSE_singleROI.csv",
     params:
-        vkey='MRID',
-        vtarget='Target',
-    shell:
-        "echo spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {params.vtarget} "
-        "-mt SVM -k linear -pg 1; "
-        "spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {params.vtarget} "
-        "-mt SVM -k linear -pg 1"
-        
-rule copy_model:
-    '''
-    Copy model to models folder
-    '''
-    input:
-        "../../data/SPARE/s_{stype}/models/NiChartData_{dtype}_model.pkl.gz"
+        vars='MRID,Age,Sex',
     output:
-        "../../models/SPARE/SPARE_{stype}_NiChartData_{dtype}_model.pkl.gz"
+        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_all.csv"
+    resources:
+        mem_mb=8000
     shell:
-        "cp {input} {output}"
-        
+        "echo python utils/util_select_sample.py {input} {params} {output}; "
+        "python utils/util_select_sample.py {input} {params} {output}"
+
 rule split_train_test:
     '''
     Split spare sample all to train test
     '''
     input:
-        "../../data/SPARE/s_{stype}/data/NiChartData_{dtype}.csv"
-    output:
-        "../../data/SPARE/s_{stype}/data_traintest/NiChartData_{dtype}_train.csv",
-        "../../data/SPARE/s_{stype}/data_traintest/NiChartData_{dtype}_test.csv"        
+        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_all.csv"
     params:
         strat_vars = 'Sex,Target',
         test_ratio = '0.4'
+    output:
+        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_train.csv",
+        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_test.csv"        
+    resources:
+        mem_mb=8000
     shell:
         "echo python utils/util_split_train_test.py {input} {params} {output}; "
         "python utils/util_split_train_test.py {input} {params} {output}"
 
-rule sparesvm_train_on_train:
+rule sparesvm_train:
     '''
-    Train SPARE model using the split train sample
+    Train SPARE model
     '''
     input:
-        "../../data/SPARE/s_{stype}/data_traintest/NiChartData_{dtype}_train.csv"
-    output:
-        "../../data/SPARE/s_{stype}/models_traintest/NiChartData_{dtype}_model.pkl.gz"
+        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_train.csv"
     params:
         vkey='MRID',
-        vtarget='Target',
+    output:
+        "../../data/SPARE/s{stype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
+    resources:
+        mem_mb=16000
     shell:
-        "echo spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {params.vtarget} "
+        "echo spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {wildcards.stype} "
         "-mt SVM -k linear -pg 1; "
-        "spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {params.vtarget} "
+        "spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {wildcards.stype} "
         "-mt SVM -k linear -pg 1"
-
-rule sparesvm_test_on_test:
+        
+rule sparesvm_test:
     '''
     Test SPARE model using the split test sample
     '''
     input:
-        data="../../data/SPARE/s_{stype}/data_traintest/NiChartData_{dtype}_test.csv",
-        mdl="../../data/SPARE/s_{stype}/models_traintest/NiChartData_{dtype}_model.pkl.gz"
+        data="../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_test.csv",
+        mdl="../../data/SPARE/s{stype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
     output:
-        csv="../../data/SPARE/s_{stype}/pred_traintest/NiChartData_{dtype}_pred.csv"
+        csv="../../data/SPARE/s{stype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
+    resources:
+        mem_mb=16000
     shell:
         "echo spare_score -a test -i {input.data} -m {input.mdl} -o {output.csv}; "
         "spare_score -a test -i {input.data} -m {input.mdl} -o {output.csv}"
 
+rule sparesvm_eval:
+    '''
+    Evaluate accuracy on test sample
+    '''
+    input:
+        data="../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_test.csv",
+        pred="../../data/SPARE/s{stype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
+    output:
+        csv="../../data/SPARE/s{stype}/pred/NiChart_DLMUSE_{dtype}_eval.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "echo python utils/util_eval_spare.py {input} {wildcards.stype} {output}; "
+        "python utils/util_eval_spare.py {input} {wildcards.stype} {output}"
 
+#rule copy_model:
+    #'''
+    #Copy model to models folder
+    #'''
+    #input:
+        #"../../data/SPARE/s_{stype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
+    #output:
+        #"../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz"
+    #shell:
+        #"cp {input} {output}"
+        
+#rule copy_spare_scores:
+    #'''
+    #Copy model to models folder
+    #'''
+    #input:
+        #"../../data/SPARE/s_{stype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
+    #output:
+        #"../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz"
+    #shell:
+        #"cp {input} {output}"
 
