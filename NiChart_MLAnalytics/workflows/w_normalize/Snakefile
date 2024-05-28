@@ -18,114 +18,154 @@ LIST_ROIS = df.Index.tolist()
 ###################################
 ## Rules
 rule ALL:
-    #input:expand("../../models/harmonization/NiChartData_{dtype}_{rtype}_{ctype}_Model.pkl.gz", dtype = ['raw', 'normICV'], rtype = ['singleROI', 'compositeROI'], ctype = ['combatAgeSex', 'combatAgeSexICV'])
-    #input:expand("../../data/data_consolidated/NiChartData_{dtype}_{rtype}_{ctype}.csv", dtype = ['raw', 'normICV'], rtype = ['singleROI', 'compositeROI'], ctype = ['combatAgeSex', 'combatAgeSexICV'])
+    #input:expand("../../data/harmonization/hISTAG/NiChartData_{dtype}_r{rtype}_combatOut_nosuffix.csv", rtype = ['primaryROI'], dtype = ['raw', 'normICV', 'percICV']) 
+    #input:expand("../../data/data_prep/combined/NiChartData_{dtype}.csv", dtype = ['raw', 'normICV', 'percICV'])
+    #input:expand("../../data/data_consolidated/NiChartData_harmonized_{dtype}_r{rtype}_h{hdata}_combatOut.csv", rtype = ['shortROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) 
     #
-    # Final models
-    #input:expand("../../models/harmonization/NiChartData_{mtype}_Model.pkl.gz", mtype = ['raw_singleROI_combatAgeSexICV', 'raw_compositeROI_combatAgeSexICV', 'normICV_singleROI_combatAgeSex', 'normICV_compositeROI_combatAgeSex', 'normICV_singleROI_combatAgeSexICV', 'normICV_compositeROI_combatAgeSexICV'])
     #
-    # Final harmonized data
-    #input:expand("../../data/data_consolidated/NiChartData_{mtype}.csv", mtype = ['raw_singleROI_combatAgeSexICV', 'raw_compositeROI_combatAgeSexICV', 'normICV_singleROI_combatAgeSex', 'normICV_compositeROI_combatAgeSex', 'normICV_singleROI_combatAgeSexICV', 'normICV_compositeROI_combatAgeSexICV'])
-    #
-    # Final un-harmonized data
-    input:expand("../../data/data_consolidated/NiChartData_{mtype}.csv", mtype = ['raw', 'normICV'])
+    #input:"../../data/data_prep/combined/NiChart_demog.csv"
+    #input:expand("../../data/data_prep/combined/NiChart_DLMUSE+Demog_{dtype}.csv", dtype = ['raw', 'normICV', 'percICV'])
+    input:expand("../../data/data_consolidated/NiChart_harmonized_{dtype}_r{rtype}_h{hdata}_combatOut.csv", rtype = ['shortROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) 
+    
+    
+#################################  
+## Data preparation
 
-    
-    
-rule rename_rois:
+rule rename_muse_rois:
     '''
-    Rename DLMUSE columns
+    Rename DLMUSE roi indices to roi names
     '''
     input:
         roi="../../data/DLMUSE/{study}_DLMUSE.csv",
         dict="../../config/list_MUSE_allROI.csv"
     output:
-        temp("../../data/data_prep/DLMUSE_raw/init/{study}.csv")
+        temp("../../data/data_prep/renamed/{study}_DLMUSE.csv")
     shell:
-        "python utils/util_rename_columns.py {input} {output}"
+        "echo python utils/util_rename_muse_rois.py {input} {output}; "
+        "python utils/util_rename_muse_rois.py {input} {output}"
+
+rule merge_data:
+    '''
+    Merge demog data to DLMUSE ROIs
+    '''
+    input:
+        demog="../../data/data_ISTAGING/{study}_ISTAG.csv",
+        roi="../../data/data_prep/renamed/{study}_DLMUSE.csv",
+    output:
+        temp("../../data/data_prep/merged/{study}.csv")
+    params:
+        key_var = 'MRID'
+    shell:
+        "echo python utils/util_merge_data.py {output} {params} {input}; "
+        "python utils/util_merge_data.py {output} {params} {input}"
+
+rule concat_studies:
+    '''
+    Combine studies into a single csv
+    '''
+    input:
+        expand("../../data/data_prep/merged/{study}.csv", study=LIST_STUDIES)
+    output:
+        temp("../../data/data_prep/combined/NiChart.csv")
+    shell:
+        "echo python utils/util_concat_studies.py {output} {input}; "
+        "python utils/util_concat_studies.py {output} {input}"
+
+rule select_roi_vars:
+    '''
+    Select ROI variables from data
+    '''
+    input:
+        data="../../data/data_prep/combined/NiChart.csv",
+        vars_csv="../../config/list_MUSE_allROI.csv"
+    params:
+        vars_list='MRID',
+    output:
+        "../../data/data_consolidated/NiChart_DLMUSE_raw.csv"
+    shell:
+        "echo python utils/util_select_vars.py {input} {params} {output}; "
+        "python utils/util_select_vars.py {input} {params} {output}"
+
+rule select_demog_vars:
+    '''
+    Select demog variables from data
+    '''
+    input:
+        data="../../data/data_prep/combined/NiChart.csv",
+        csv_vars="../../config/list_demog_normalization.csv"
+    params:
+        list_vars='MRID',
+    output:
+        "../../data/data_consolidated/NiChart_demog.csv"
+    shell:
+        "echo python utils/util_select_vars.py {input} {params} {output}; "
+        "python utils/util_select_vars.py {input} {params} {output}"
+
+#################################    
+## ICV correction
     
 rule corr_icv:
     '''
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        "../../data/data_prep/DLMUSE_raw/init/{study}.csv"
+        "../../data/data_consolidated/NiChart_DLMUSE_raw.csv"
     output:
-        temp("../../data/data_prep/DLMUSE_{mtype}/init/{study}.csv")
+        temp("../../data/data_consolidated/NiChart_DLMUSE_{corr_type}.csv")
     params:
         icv_var = 'ICV',
         exclude_vars = 'MRID',
         suffix = 'NONE'
     shell:
-        "echo python utils/util_corr_icv.py {input} {wildcards.mtype} {params} {output}; "
-        "python utils/util_corr_icv.py {input} {wildcards.mtype} {params} {output}"
+        "echo python utils/util_corr_icv.py {input} {wildcards.corr_type} {params} {output}; "
+        "python utils/util_corr_icv.py {input} {wildcards.corr_type} {params} {output}"
 
-rule merge_data:
+
+#################################    
+## Harmonization
+
+rule merge_demog_and_data:
     '''
-    Merge demog data to DLMUSE
+    Merge demog and data
     '''
     input:
-        demog="../../data/data_ISTAGING/{study}_ISTAG.csv",
-        roi="../../data/data_prep/DLMUSE_{mtype}/init/{study}.csv",
-    output:
-        temp("../../data/data_prep/DLMUSE_{mtype}/merged/{study}.csv")
+        data="../../data/data_consolidated/NiChart_DLMUSE_{dtype}.csv",
+        demog="../../data/data_consolidated/NiChart_demog.csv",
     params:
-        key_var = 'MRID'
+        key_var="MRID"
+    output:
+        "../../data/harmonization/prep/NiChart_DLMUSE+Demog_{dtype}.csv",
     shell:
+        "echo python utils/util_merge_data.py {output} {params} {input};"
         "python utils/util_merge_data.py {output} {params} {input}"
 
-rule concat_studies_raw:
+rule select_harmonization_sample:
     '''
-    Combine studies
-    '''
-    input:
-        expand("../../data/data_prep/DLMUSE_raw/merged/{study}.csv", study=LIST_STUDIES)
-    output:
-        "../../data/data_prep/DLMUSE_raw/data_combined/NiChartData.csv"
-    shell:
-        "python utils/util_concat_studies.py {output} {input}"
-
-rule concat_studies_percICV:
-    '''
-    Combine studies
+    Select harmonization sample
+    - Select samples (from the centiles sample list)
+    - Select variables (a set of input variables + ROI names from list)
     '''
     input:
-        expand("../../data/data_prep/DLMUSE_percICV/merged/{study}.csv", study=LIST_STUDIES)
-    output:
-        "../../data/data_prep/DLMUSE_percICV/data_combined/NiChartData.csv"
-    shell:
-        "python utils/util_concat_studies.py {output} {input}"
-
-rule concat_studies_normICV:
-    '''
-    Combine studies
-    '''
-    input:
-        expand("../../data/data_prep/DLMUSE_normICV/merged/{study}.csv", study=LIST_STUDIES)
-    output:
-        "../../data/data_prep/DLMUSE_normICV/data_combined/NiChartData.csv"
-    shell:
-        "python utils/util_concat_studies.py {output} {input}"
-
-rule select_sample:
-    input:
-        data="../../data/data_prep/DLMUSE_{dtype}/data_combined/NiChartData.csv",
-        sample="../../data/samples/sample_harmonization_{htype}.csv",
+        data="../../data/harmonization/prep/NiChart_DLMUSE+Demog_{dtype}.csv",
+        sample="../../data/samples/sample_harmonization_{hdata}_{htype}.csv",
         rois="../../config/list_MUSE_{rtype}.csv",
     params:
         vars='MRID,Age,Sex,SITE,ICV',
     output:
-        "../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}/NiChartData_Input.csv"
+        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_{htype}.csv"
     shell:
         "echo python utils/util_select_sample.py {input} {params} {output}; "
         "python utils/util_select_sample.py {input} {params} {output}"
 
 rule combat_train:
+    '''
+    Train combat harmonization model
+    '''    
     input:
-        "../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_train/NiChartData_Input.csv"
+        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_train.csv"
     output:
-        mdl="../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_train/combatAgeSexICV/NiChartData_Model.pkl.gz",
-        csv=temp("../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_train/combatAgeSexICV/NiChartData_Output.csv")
+        mdl="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatModel.pkl.gz",
+        csv=temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut.csv")
     params:
         batch='SITE',
         vkey='MRID',
@@ -138,122 +178,70 @@ rule combat_train:
         "neuroharm -a learn -i {input} -k {params.vkey} -b {params.batch} "
         "-n {params.vnum} -c {params.vcat} -s {params.vspline} -o {output.mdl} -u {output.csv}"
 
-rule combat_train_noicv:
-    input:
-        "../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_train/NiChartData_Input.csv"
-    output:
-        mdl="../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_train/combatAgeSex/NiChartData_Model.pkl.gz",
-        csv=temp("../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_train/combatAgeSex/NiChartData_Output.csv")
-    params:
-        batch='SITE',
-        vkey='MRID',
-        vignore='ICV',
-        vcat='Sex',
-        vspline='Age'
-    shell:
-        "echo neuroharm -a learn -i {input} -k {params.vkey} -b {params.batch} "
-        "-g {params.vignore} -c {params.vcat} -s {params.vspline} -o {output.mdl} -u {output.csv}; "
-        "neuroharm -a learn -i {input} -k {params.vkey} -b {params.batch} "
-        "-g {params.vignore} -c {params.vcat} -s {params.vspline} -o {output.mdl} -u {output.csv}"
-
 rule combat_apply:
+    '''
+    Apply combat harmonization model to calculate harmonized values
+    '''    
     input:
-        data="../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_all/NiChartData_Input.csv",
-        mdl="../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_train/{ctype}/NiChartData_Model.pkl.gz"
+        data="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}.csv",
+        mdl="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatModel.pkl.gz"
     output:
-        csv=temp("../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_all/{ctype}/NiChartData_Output.csv")  
+        csv=temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut.csv")  
     shell:
         "echo neuroharm -a apply -i {input.data} -m {input.mdl} -u {output.csv};"
         "neuroharm -a apply -i {input.data} -m {input.mdl} -u {output.csv}"
 
-rule combat_rename_vars:
+rule remove_combat_suffix:
+    '''
+    Remove combat suffix (_HARM)
+    FIXME: Ideally combat should be run with an arg to create output var names without a suffix
+    '''        
     input:
-        data="../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}/{ctype}/NiChartData_Output.csv",
-        dict="../../config/list_MUSE_allROI.csv"
+        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut.csv",
+    params:
+        rm_suff='_HARM'
+    output:
+        temp("../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut_nosuffix.csv")
+    shell:
+        "echo python utils/util_remove_suffix.py {input} {params} {output}; "
+        "python utils/util_remove_suffix.py {input} {params} {output}; "
+        
+rule select_harmonization_output_vars:
+    '''
+    Select final variables from the harmonized data (MRID + ICV + ROI names)
+    '''        
+    input:
+        data="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut_nosuffix.csv",
+        rois="../../config/list_MUSE_{rtype}.csv"
     params:
         vars='MRID,ICV',
-        rmsuffix='_HARM'
     output:
-        csv="../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}/{ctype}/NiChartData.csv"
+        csv="../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut_nosuffix_rois.csv"
     shell:
         "echo python utils/util_select_vars.py {input} {params} {output}; "
         "python utils/util_select_vars.py {input} {params} {output}; "
 
-rule copy_model:
+rule copy_harmonization_model:
+    '''
+    Copy harmonization model to models
+    '''        
     input:
-        "../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_train/{ctype}/NiChartData_Model.pkl.gz"
+        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatModel.pkl.gz"
     output:
-        "../../models/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}_train/{ctype}/NiChartData_Model.pkl.gz"
+        "../../models/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatModel.pkl.gz"
     shell:
         "cp {input} {output}"
 
-rule select_rois_initData:
+rule copy_harmonized_data:
     '''
-    Select roi values from init ROIs
-    '''
+    Copy harmonized data
+    '''        
     input:
-        data="../../data/data_prep/DLMUSE_{dtype}/data_combined/NiChartData.csv",
-        roi="../../config/list_MUSE_allROI.csv",
+        "../../data/harmonization/h{hdata}/NiChart_{dtype}_r{rtype}_combatOut_nosuffix_rois.csv"
     output:
-        "../../data/data_normalized/DLMUSE_{dtype}/data_combined/NiChartData.csv"
-    params:
-        in_vars = 'MRID',
-        rm_suff = 'dummy_suffix'
-    shell:
-        "python utils/util_select_vars.py {input} {params} {output}"    
-
-rule select_rois_harmonizedData:
-    '''
-    Select roi values from harmonized ROIs
-    '''
-    input:
-        data="../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_{htype}/{ctype}/NiChartData.csv",
-        roi="../../config/list_MUSE_allROI.csv",
-    output:
-        "../../data/data_normalized/DLMUSE_{dtype}/r_{rtype}/h_{htype}/{ctype}/NiChartData.csv"
-    params:
-        in_vars = 'MRID',
-        rm_suff = 'dummy_suffix'
-    shell:
-        "python utils/util_select_vars.py {input} {params} {output}"    
-
-## FIXME: this is added to simplify final output
-rule prep_final_data:
-    '''
-    Select from all combinations the ones that will be used in final eval
-    Save them in a single folder (without nested folders)
-    '''
-    input:
-        "../../data/data_normalized/DLMUSE_{dtype}/data_combined/NiChartData.csv"
-    output:
-        "../../data/data_consolidated/NiChartData_{dtype}.csv"
+        "../../data/data_consolidated/NiChart_harmonized_{dtype}_r{rtype}_h{hdata}_combatOut.csv"
     shell:
         "cp {input} {output}"
-
-rule prep_final_data_harmonized:
-    '''
-    Select from all combinations the ones that will be used in final eval
-    Save them in a single folder (without nested folders)
-    '''
-    input:
-        "../../data/data_normalized/DLMUSE_{dtype}/r_{rtype}/h_ISTAG_all/{ctype}/NiChartData.csv"
-    output:
-        "../../data/data_consolidated/NiChartData_{dtype}_{rtype}_{ctype}.csv"
-    shell:
-        "cp {input} {output}"
-        
-rule prep_final_model_harmonized:
-    '''
-    Select from all combinations the ones that will be used in final eval
-    Save them in a single folder (without nested folders)
-    '''
-    input:
-        "../../data/harmonization/DLMUSE_{dtype}/r_{rtype}/h_ISTAG_train/{ctype}/NiChartData_Model.pkl.gz"
-    output:
-        "../../models/harmonization/NiChartData_{dtype}_{rtype}_{ctype}_Model.pkl.gz"
-    shell:
-        "cp {input} {output}"
-
         
 
 

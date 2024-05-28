@@ -30,11 +30,12 @@ OUT_SUFF =  OUT_ROI_TYPES + OUT_MDL_TYPES
 ## Classification models
 #SPARE_C_MDL = ['AD-ISTAG', 'V-Diabetes', 'V-Hypertension', 'V-Smoking']
 SPARE_C_MDL = ['AD-ISTAG', 'V-Depression', 'V-Diabetes', 'V-Hypertension', 'V-Hyperlipidemia', 'V-Smoking']
+SPARE_C_MDL = ['AD-ISTAG']
 
 ## Regression models
 #SPARE_R_MDL = ['V-BMI', 'V-TauCSF', 'V-MMSE']
 SPARE_R_MDL = ['BA-ISTAG', 'V-Age', 'V-BMI', 'V-FluidIntelligence', 'V-TauCSF']
-
+SPARE_R_MDL = ['V-BMI']
 
 ###################################
 ## Function definitions

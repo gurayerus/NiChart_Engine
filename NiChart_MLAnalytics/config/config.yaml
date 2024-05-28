@@ -5,3 +5,4 @@ list_rois_primary: ../../config/list_MUSE_primaryROI.csv
 list_rois_short: ../../config/list_MUSE_shortROI.csv
 list_studies: ../../config/list_studies.csv
 list_SPARE: ../../config/list_SPARE-models.csv
+list_demog_normalization: ../../config/list_demog_normalization.csv

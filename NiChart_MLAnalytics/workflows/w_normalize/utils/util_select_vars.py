@@ -3,13 +3,10 @@ import argparse
 import json
 import sys
 
-def select_vars(in_csv, in_rois, in_vars, rm_suff, out_csv):
+def select_vars(in_csv, in_rois, in_vars, out_csv):
 
     """
     Select variables from data file
-     - Before selection, removes the input suffix from variable names
-     - FIXME This is a quick fix for unifying var names with suffixes 
-       (e.g. GM_HARM -> GM from combat output)
     """
     
     # Read input files
@@ -29,9 +26,6 @@ def select_vars(in_csv, in_rois, in_vars, rm_suff, out_csv):
     # Make a list of selected variables
     sel_vars = in_vars + roi_vars 
 
-    # Remove suffix from variables
-    df.columns = df.columns.str.replace(rm_suff, '')
-
     # Remove vars that are not in the dataframe
     df_vars = df.columns.tolist()
     sel_vars = [x for x in sel_vars if x in df_vars]
@@ -44,19 +38,18 @@ def select_vars(in_csv, in_rois, in_vars, rm_suff, out_csv):
 
 if __name__ == "__main__":
     # Access arguments from command line using sys.argv
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 5:
         print("Error: Please provide all required arguments")
-        print("Usage: python select_vars.py in_csv.csv in_rois.csv in_vars rm_suffix out_csv.csv")
+        print("Usage: python select_vars.py in_csv.csv in_rois.csv in_vars out_csv.csv")
         sys.exit(1)
 
     in_csv = sys.argv[1]
     in_rois = sys.argv[2]
     in_vars = sys.argv[3]
-    rm_suff = sys.argv[4]
-    out_csv = sys.argv[5]
+    out_csv = sys.argv[4]
 
     # Call the function
-    select_vars(in_csv, in_rois, in_vars, rm_suff, out_csv)
+    select_vars(in_csv, in_rois, in_vars, out_csv)
 
     print("Selection of variables complete! Output file:", out_csv)
 
