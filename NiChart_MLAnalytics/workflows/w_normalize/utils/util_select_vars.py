@@ -33,6 +33,9 @@ def select_vars(in_csv, in_rois, in_vars, out_csv):
     # Select variables
     df_out = df[sel_vars]
 
+    # Drop duplicate columns in MUSE ROIs (ROIs repeated in single and composite ROI list)
+    df_out = df_out.loc[:, df_out.columns.duplicated()==False]
+
     # Write out file
     df_out.to_csv(out_csv, index=False)
 
