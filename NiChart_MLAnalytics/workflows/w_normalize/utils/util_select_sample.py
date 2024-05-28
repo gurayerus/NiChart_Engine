@@ -39,6 +39,9 @@ def select_sample(in_csv, in_sample, in_rois, in_vars, out_csv):
     # Select sample
     df_out = dfs.merge(df_out, on = in_key)
     
+    # Drop duplicate columns in MUSE ROIs (ROIs repeated in single and composite ROI list)
+    df_out = df_out.loc[:, df_out.columns.duplicated()==False]    
+    
     # Write out file
     df_out.to_csv(out_csv, index=False)
 
