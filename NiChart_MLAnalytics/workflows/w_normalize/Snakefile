@@ -21,13 +21,14 @@ LIST_ROIS = df.Index.tolist()
 ###################################
 ## Rules
 rule ALL:
-    input:expand("../../data/data_consolidated/NiChart_DLMUSE_harmonized_{dtype}_r{rtype}_h{hdata}.csv", rtype = ['singleROI', 'compositeROI', 'allROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) + expand("../../models/harmonization/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz", rtype = ['singleROI', 'compositeROI', 'allROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) 
+    #input:expand("../../data/data_consolidated/NiChart_DLMUSE_harmonized_{dtype}_r{rtype}_h{hdata}.csv", rtype = ['singleROI', 'compositeROI', 'allROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) + expand("../../models/harmonization/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz", rtype = ['singleROI', 'compositeROI', 'allROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) 
     #
     #
     #
     #input:expand("../../data/harmonization/hISTAG/NiChart_DLMUSE_{dtype}_r{rtype}_{htype}.csv", rtype = ['singleROI', 'compositeROI', 'allROI'], dtype = ['raw', 'normICV', 'percICV'], htype = ['train', 'all']) 
     #input:"../../data/harmonization/hISTAG/NiChart_DLMUSE_raw_rsingleROI_train.csv"
     #input:"../../data/data_consolidated/NiChart_DLMUSE_raw.csv"
+    input:expand("../../data/data_consolidated/NiChart_DLMUSE_harmonized_{dtype}_r{rtype}_h{hdata}.csv", rtype = ['primaryROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) + expand("../../models/harmonization/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz", rtype = ['primaryROI'], dtype = ['raw', 'normICV', 'percICV'], hdata = ['ISTAG']) 
     
 #################################  
 ## Data preparation

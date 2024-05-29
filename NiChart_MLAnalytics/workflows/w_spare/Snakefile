@@ -15,18 +15,6 @@ LIST_ROIS = df.Index.tolist()
 #df = pd.read_csv(config["list_SPARE_models"])
 #LIST_SPARE_MODELS = df.Model.tolist()
 
-
-OUT_ROI_TYPES = ['raw', 'normICV']
-OUT_MDL_TYPES = ['raw_singleROI_combatAgeSexICV', 
-                 'raw_compositeROI_combatAgeSexICV', 
-                 'normICV_singleROI_combatAgeSex', 
-                 'normICV_compositeROI_combatAgeSex', 
-                 'normICV_singleROI_combatAgeSexICV', 
-                 'normICV_compositeROI_combatAgeSexICV']
-OUT_MDL_TYPES = ['raw_singleROI_combatAgeSexICV', 
-                 'normICV_singleROI_combatAgeSex']
-OUT_SUFF =  OUT_ROI_TYPES + OUT_MDL_TYPES
-
 ## Classification models
 LIST_SPARE = ['AD', 'Diabetes', 'Hyperlipidemia', 'Hypertension', 'Obesity', 'Smoking']
 
@@ -40,22 +28,11 @@ SPARE_R_MDL = ['BA']
 ## Rules
 rule ALL:
     #
-    ## Rule to run all combinations
-    #input:expand("../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz", stype = OUT_SPARE_TYPES, dtype = OUT_SUFF)
-    #
-    # Rule to run on a single combination as a test
-    #input:expand("../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz", stype = ['AD-ISTAG'], dtype = ['normICV_singleROI_combatAgeSex'])
-    #
-    #
-    #input:expand("../../data/SPARE/s_C_{stype}/pred_traintest/NiChart_DLMUSE_{dtype}_pred.csv", stype = SPARE_C_MDL, dtype = OUT_SUFF)
-    #input:expand("../../data/SPARE/s_R_{stype}/pred_traintest/NiChart_DLMUSE_{dtype}_pred.csv", stype = SPARE_R_MDL, dtype = OUT_SUFF)
-    #
-    #
-    #input:expand("../../data/SPARE/s{stype}/pred_traintest/NiChart_DLMUSE_{dtype}_pred.csv", stype = SPARE_R_MDL, dtype = OUT_SUFF)
     #input:"../../data/SPARE/sAD/NiChart_DLMUSE_raw_all.csv"
     #input:"../../data/SPARE/sAD/data/NiChart_DLMUSE_raw_train.csv"
-    #input:"../../data/SPARE/sAge/data/NiChart_DLMUSE_harmonized_normICV_rsingleROI_hISTAG_train.csv"
-    input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rsingleROI_hISTAG_pred.csv"
+    #input:"../../data/SPARE/sAge/data/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_train.csv"
+    #input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_pred.csv"
+    input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_eval.csv"
     
     
 #################################    
@@ -87,7 +64,7 @@ rule select_spare_sample:
     input:
         sample="../../data/samples/sample_SPARE_{stype}_all.csv",
         data="../../data/SPARE/prep/NiChart_DLMUSE+Demog_{dtype}.csv",
-        rois="../../config/list_MUSE_singleROI.csv",
+        rois="../../config/list_MUSE_primaryROI.csv",
     params:
         vars='MRID,Age,Sex',
     output:

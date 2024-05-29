@@ -9,32 +9,36 @@ def eval_spare(in1_csv, in2_csv, target_var, out_csv):
     """
     
     key_var = 'MRID'
+    pred_var = 'SPARE_score'
     
     # Read csv files
     df1 = pd.read_csv(in1_csv)
     df2 = pd.read_csv(in2_csv)
     
     df1 = df1[[key_var, target_var]]
-    df2 = df2[[key_var, target_var]]
+    df2 = df2[[key_var, pred_var]]
 
     # Merge DataFrames
-    df_tmp = df1.merge(df2, on = key_var, suffixes = ['_init', '_pred'])
+    #df_tmp = df1.merge(df2, on = key_var, suffixes = ['_init', '_pred'])
+    df_tmp = df1.merge(df2, on = key_var)
+
+    print(df_tmp.head())
 
     # Calculate score
     num_label = df1[target_var].unique().shape[0]
     num_sample = df1.shape[0]
-    v1 = df_tmp[target_var + '_init']
-    v2 = df_tmp[target_var + '_pred']
+    v1 = df_tmp[target_var]
+    v2 = df_tmp[pred_var]
     
     if num_label == 2:      ## Classification
         out_score = float((v1==v2).sum()) / num_sample
         out_label = 'Accuracy'
 
     else:      ## Regression
-        out_score = np.corrcoef(v1==v2)[0,1]
+        out_score = np.corrcoef(v1, v2)[0,1]
         out_label = 'CorrCoef'
 
-    df_out = pd.DataFrame(columns = [out_label], data = out_score)
+    df_out = pd.DataFrame({out_label:[out_score]})
 
     # Write out file
     df_out.to_csv(out_csv, index=False)
