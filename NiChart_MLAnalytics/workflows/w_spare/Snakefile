@@ -16,10 +16,7 @@ LIST_ROIS = df.Index.tolist()
 #LIST_SPARE_MODELS = df.Model.tolist()
 
 ## Classification models
-LIST_SPARE = ['AD', 'Diabetes', 'Hyperlipidemia', 'Hypertension', 'Obesity', 'Smoking']
-
-## Regression models
-SPARE_R_MDL = ['BA']
+LIST_SPARE = ['Age', 'AD', 'Diabetes', 'Hyperlipidemia', 'Hypertension', 'Obesity', 'Smoking']
 
 ###################################
 ## Function definitions
@@ -32,7 +29,8 @@ rule ALL:
     #input:"../../data/SPARE/sAD/data/NiChart_DLMUSE_raw_train.csv"
     #input:"../../data/SPARE/sAge/data/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_train.csv"
     #input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_pred.csv"
-    input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_eval.csv"
+    #input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_eval.csv"
+    input:expand("../../data/SPARE/s{stype}/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_eval.csv", stype = LIST_SPARE)
     
     
 #################################    

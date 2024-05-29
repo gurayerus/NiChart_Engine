@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import sys
+from sklearn.metrics import roc_auc_score
 
 def eval_spare(in1_csv, in2_csv, target_var, out_csv):
     """
@@ -22,23 +23,28 @@ def eval_spare(in1_csv, in2_csv, target_var, out_csv):
     #df_tmp = df1.merge(df2, on = key_var, suffixes = ['_init', '_pred'])
     df_tmp = df1.merge(df2, on = key_var)
 
-    print(df_tmp.head())
-
     # Calculate score
     num_label = df1[target_var].unique().shape[0]
     num_sample = df1.shape[0]
-    v1 = df_tmp[target_var]
-    v2 = df_tmp[pred_var]
+    v1 = np.array(df_tmp[target_var].astype(float))
+    v2 = np.array(df_tmp[pred_var].astype(float))
     
-    if num_label == 2:      ## Classification
-        out_score = float((v1==v2).sum()) / num_sample
-        out_label = 'Accuracy'
+    ## Classification metrics
+    if num_label == 2:      
+        v2_bin = (v2>0).astype(float)
+        acc = float((v1==v2_bin).sum()) / num_sample
+        
+        auc = roc_auc_score(v1, v2)        
 
-    else:      ## Regression
-        out_score = np.corrcoef(v1, v2)[0,1]
-        out_label = 'CorrCoef'
+        df_out = pd.DataFrame({'Accuracy':[acc], 'AUC':[auc]})
 
-    df_out = pd.DataFrame({out_label:[out_score]})
+    ## Regression metrics
+    else:      
+        corr = np.corrcoef(v1, v2)[0,1]
+        
+        mae = (np.abs(v1 - v2)).mean()
+        
+        df_out = pd.DataFrame({'Corr':[corr], 'MAE': [mae]})
 
     # Write out file
     df_out.to_csv(out_csv, index=False)
