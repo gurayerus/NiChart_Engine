@@ -17,6 +17,7 @@ LIST_ROIS = df.Index.tolist()
 
 ## Classification models
 LIST_SPARE = ['Age', 'AD', 'Diabetes', 'Hyperlipidemia', 'Hypertension', 'Obesity', 'Smoking']
+LIST_SPARE = ['Smoking']
 
 ###################################
 ## Function definitions
@@ -30,7 +31,7 @@ rule ALL:
     #input:"../../data/SPARE/sAge/data/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_train.csv"
     #input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_pred.csv"
     #input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_eval.csv"
-    input:expand("../../data/SPARE/s{stype}/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_eval.csv", stype = LIST_SPARE)
+    input:expand("../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_harmonized_normICV_r{rtype}_hISTAG_eval.csv", stype = LIST_SPARE, rtype = ['singleROI'])
     
     
 #################################    
@@ -62,11 +63,11 @@ rule select_spare_sample:
     input:
         sample="../../data/samples/sample_SPARE_{stype}_all.csv",
         data="../../data/SPARE/prep/NiChart_DLMUSE+Demog_{dtype}.csv",
-        rois="../../config/list_MUSE_primaryROI.csv",
+        rois="../../config/list_MUSE_{rtype}.csv",
     params:
         vars='MRID,Age,Sex',
     output:
-        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_all.csv"
+        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_all.csv"
     resources:
         mem_mb=8000
     shell:
@@ -78,13 +79,13 @@ rule split_train_test:
     Split spare sample all to train test
     '''
     input:
-        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_all.csv"
+        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_all.csv"
     params:
         strat_vars = 'Sex,Target',
         test_ratio = '0.4'
     output:
-        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_train.csv",
-        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_test.csv"        
+        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_train.csv",
+        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_test.csv"        
     resources:
         mem_mb=8000
     shell:
@@ -96,11 +97,11 @@ rule sparesvm_train:
     Train SPARE model
     '''
     input:
-        "../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_train.csv"
+        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_train.csv"
     params:
         vkey='MRID',
     output:
-        "../../data/SPARE/s{stype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
+        "../../data/SPARE/s{stype}/r{rtype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
     resources:
         mem_mb=16000
     shell:
@@ -114,10 +115,10 @@ rule sparesvm_test:
     Test SPARE model using the split test sample
     '''
     input:
-        data="../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_test.csv",
-        mdl="../../data/SPARE/s{stype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
+        data="../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_test.csv",
+        mdl="../../data/SPARE/s{stype}/r{rtype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
     output:
-        csv="../../data/SPARE/s{stype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
+        csv="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
     resources:
         mem_mb=16000
     shell:
@@ -129,10 +130,10 @@ rule sparesvm_eval:
     Evaluate accuracy on test sample
     '''
     input:
-        data="../../data/SPARE/s{stype}/data/NiChart_DLMUSE_{dtype}_test.csv",
-        pred="../../data/SPARE/s{stype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
+        data="../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_test.csv",
+        pred="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
     output:
-        csv="../../data/SPARE/s{stype}/pred/NiChart_DLMUSE_{dtype}_eval.csv"
+        csv="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_eval.csv"
     resources:
         mem_mb=8000
     shell:
