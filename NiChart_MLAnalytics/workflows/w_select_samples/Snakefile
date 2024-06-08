@@ -1,20 +1,32 @@
 ## Workflow for selecting a smaller sample for large studies (e.g. UKBIOBANK)
 
+import pandas as pd
+import os
+
+## Create a report for the workflow
 report: "report/workflow.rst"
 
+## Read params from the config file
 configfile: "../../config/config.yaml"
+
+df_tmp = pd.read_csv(config["subsample_list_study"])
+LIST_STUDY = df_tmp.Study.tolist()
+LIST_NSAMPLE = df_tmp.NumSample.tolist()
+
+LIST_DTYPE = ['DemogClin', 'MUSE', 'DLMUSE']
+
+OUT_FILES = expand("../../data/data_subsampled/{study}-n{nsample}/{study}-n{nsample}_DemogClin.csv", zip, study = LIST_STUDY, nsample = LIST_NSAMPLE), expand("../../data/data_subsampled/{study}-n{nsample}/{study}-n{nsample}_MUSE.csv", zip, study = LIST_STUDY, nsample = LIST_NSAMPLE), expand("../../data/data_subsampled/{study}-n{nsample}/{study}-n{nsample}_DLMUSE.csv", zip, study = LIST_STUDY, nsample = LIST_NSAMPLE)
 
 ###################################
 ## Rules
 rule ALL:
-    #input:expand("../../data/data_subsampled/UKBIOBANK-n8000_{dtype}.csv", dtype = ['DemogClin', 'MUSE', 'DLMUSE'])
-    input:expand("../../data/data_subsampled/ADNI-n1000_{dtype}.csv", dtype = ['DemogClin', 'MUSE', 'DLMUSE'])
+    input: OUT_FILES
 
 rule select_sample:
     input:
         "../../data/init_data_istaging/DLMUSE/{study}_DLMUSE.csv",
     output:
-        temp("../../data/data_subsampled/sample_{study}-n{num_sample}.csv")
+        temp("../../data/data_subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv")
     params:
         out_vars = 'MRID',
     shell:
@@ -23,9 +35,9 @@ rule select_sample:
 rule filter_data:
     input:
         in_csv="../../data/init_data_istaging/{dtype}/{study}_{dtype}.csv",
-        in_list="../../data/data_subsampled/sample_{study}-n{num_sample}.csv"
+        in_list="../../data/data_subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
     output:
-        "../../data/data_subsampled/{study}-n{num_sample}_{dtype}.csv"
+        "../../data/data_subsampled/{study}-n{num_sample}/{study}-n{num_sample}_{dtype}.csv"
     params:
         key_var = 'MRID'
     shell:

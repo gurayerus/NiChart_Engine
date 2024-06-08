@@ -1,3 +1,5 @@
+subsample_num: 1000
+subsample_list_study: ../../config/subsample_list_studies.csv
 list_rois_all: ../../config/list_MUSE_allROI.csv
 list_rois_single: ../../config/list_MUSE_singleROI.csv
 list_rois_composite: ../../config/list_MUSE_compositeROI.csv

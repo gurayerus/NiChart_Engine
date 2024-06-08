@@ -32,6 +32,9 @@ if __name__ == "__main__":
     out_vars = sys.argv[3]
     out_csv = sys.argv[4]
     
+    # Print run command
+    print('About to run: ' + ' '.join(sys.argv))
+
     # Call the function
     subsample_data(in_csv, num_sample, out_vars, out_csv)
 
