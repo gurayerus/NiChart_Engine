@@ -7,26 +7,26 @@ configfile: "../../config/config.yaml"
 ###################################
 ## Rules
 rule ALL:
-    input:expand("../../data/data_subsampled/UKBIOBANK-B1/UKBIOBANK-B1_{dtype}.csv", dtype = ['DemogClin', 'MUSE', 'DLMUSE'])
+    #input:expand("../../data/data_subsampled/UKBIOBANK-n8000_{dtype}.csv", dtype = ['DemogClin', 'MUSE', 'DLMUSE'])
+    input:expand("../../data/data_subsampled/ADNI-n1000_{dtype}.csv", dtype = ['DemogClin', 'MUSE', 'DLMUSE'])
 
-rule select_sample_ukbb:
+rule select_sample:
     input:
-        "../../data/init_data_istaging/DLMUSE/UKBIOBANK_DLMUSE.csv",
+        "../../data/init_data_istaging/DLMUSE/{study}_DLMUSE.csv",
     output:
-        "../../data/data_subsampled/UKBIOBANK-B1/UKBIOBANK-B1_selMRIDs.csv"
+        temp("../../data/data_subsampled/sample_{study}-n{num_sample}.csv")
     params:
-        num_sample = '8000',
         out_vars = 'MRID',
     shell:
-        "python ./utils/util_subsample_data.py {input} {params} {output}"
+        "python ../../utils/util_subsample_data.py {input} {wildcards.num_sample} {params} {output}"
 
-rule filter_data_ukbb:
+rule filter_data:
     input:
-        in_csv="../../data/init_data_istaging/{dtype}/UKBIOBANK_{dtype}.csv",
-        in_list="../../data/data_subsampled/UKBIOBANK-B1/UKBIOBANK-B1_selMRIDs.csv"
+        in_csv="../../data/init_data_istaging/{dtype}/{study}_{dtype}.csv",
+        in_list="../../data/data_subsampled/sample_{study}-n{num_sample}.csv"
     output:
-        "../../data/data_subsampled/UKBIOBANK-B1/UKBIOBANK-B1_{dtype}.csv"
+        "../../data/data_subsampled/{study}-n{num_sample}_{dtype}.csv"
     params:
-        key_var = 'MRID',
+        key_var = 'MRID'
     shell:
-        "python ./utils/util_filter_to_subsampled.py {input} {params} {output}"
+        "python ../../utils/util_merge_data.py {input} {params} {output}"
