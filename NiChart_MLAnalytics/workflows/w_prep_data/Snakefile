@@ -67,7 +67,7 @@ rule select_vars:
         dict_csv="../../config/list_MUSE_allROI.csv"
     params:
         dict_var = 'Code',
-        vars_list = 'MRID,Age,Sex',
+        vars_list = 'MRID,Age,Sex,DLICV,Study,PTID',
     output:
         temp("../../data/data_prep/sel_vars/{study}_{dtype}.csv")
     resources:
