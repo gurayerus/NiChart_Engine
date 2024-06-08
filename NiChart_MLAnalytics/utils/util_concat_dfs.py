@@ -10,7 +10,7 @@ def concat_dfs(out_csv, list_in_csv):
     col_common = []
     for i, in_csv in enumerate(list_in_csv):
         # Read csv files
-        df_tmp = pd.read_csv(in_csv)
+        df_tmp = pd.read_csv(in_csv, dtype = {'MRID':str})
         list_df.append(df_tmp)
 
         # Detect common columns

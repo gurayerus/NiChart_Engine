@@ -10,7 +10,7 @@ def rename_df_columns(in_csv, in_dict, var_from, var_to, out_csv):
     """
     
     # Read input files
-    df = pd.read_csv(in_csv)
+    df = pd.read_csv(in_csv, dtype = {'MRID':str})
     dfd = pd.read_csv(in_dict)
 
     # Convert columns of dataframe to str

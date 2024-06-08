@@ -10,7 +10,7 @@ def select_vars(in_csv, dict_csv, dict_var, vars_list, out_csv):
     """
     
     # Read input files
-    df = pd.read_csv(in_csv)
+    df = pd.read_csv(in_csv, dtype = {'MRID':str})
     dfd = pd.read_csv(dict_csv)
 
     # Convert columns of dataframe to str (to handle numeric ROI indices)

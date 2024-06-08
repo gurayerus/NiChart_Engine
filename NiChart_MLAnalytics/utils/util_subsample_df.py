@@ -8,7 +8,7 @@ def subsample_data(in_csv, num_sample, out_vars, out_csv):
     """
 
     ## Read data
-    df = pd.read_csv(in_csv)
+    df = pd.read_csv(in_csv, dtype = {'MRID':str})
     
     ## Select sample
     df_out = df.sample(num_sample)

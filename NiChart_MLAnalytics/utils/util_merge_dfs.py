@@ -7,8 +7,8 @@ def merge_data(in_csv1, in_csv2, key_var, out_csv):
     Using an inner merge
     """
     
-    df1 = pd.read_csv(in_csv1)
-    df2 = pd.read_csv(in_csv2)
+    df1 = pd.read_csv(in_csv1, dtype = {'MRID':str})
+    df2 = pd.read_csv(in_csv2, dtype = {'MRID':str})
     
     df_out = df1.merge(df2, on = key_var)
 
