@@ -12,12 +12,12 @@ configfile: "../../config/config.yaml"
 
 ## Read study list from config
 df = pd.read_csv(config["list_studies"])
-LIST_STUDIES = df.Study.tolist()
+LIST_STUDIES = df.Study[0:2].tolist()
 
 ###################################
 ## Rules
 
-OUT_FILES = expand("../../data/data_prep/NiChart_{dtype}.csv", dtype = ['MUSE', 'DLMUSE'])
+OUT_FILES = expand("../../data/data_prep/combined/NiChart_{dtype}_{ctype}.csv", dtype = ['MUSE', 'DLMUSE'], ctype = ['raw', 'normICV', 'percICV'])
 
 rule ALL:
     '''
@@ -58,34 +58,102 @@ rule merge_data:
     shell:
         "python ../../utils/util_merge_dfs.py {input} {params} {output}"
 
-rule select_vars:
-    '''
-    Select variables from data
-    '''
-    input:
-        in_csv="../../data/data_prep/merged/{study}_{dtype}.csv",
-        dict_csv="../../config/list_MUSE_allROI.csv"
-    params:
-        dict_var = 'Code',
-        vars_list = 'MRID,Age,Sex,DLICV,Study,PTID',
-    output:
-        temp("../../data/data_prep/sel_vars/{study}_{dtype}.csv")
-    resources:
-        mem_mb=8000
-    shell:
-        "python ../../utils/util_select_vars.py {input} {params} {output}"
-
 rule concat_studies:
     '''
     Combine studies into a single csv
     '''
     input:
-        expand("../../data/data_prep/sel_vars/{study}_{{dtype}}.csv", study=LIST_STUDIES)
+        expand("../../data/data_prep/merged/{study}_{{dtype}}.csv", study=LIST_STUDIES)
     params:
         key_var = 'MRID'
     output:
-        "../../data/data_prep/NiChart_{dtype}.csv"
+        temp("../../data/data_prep/combined/NiChart_{dtype}.csv")
     resources:
         mem_mb=8000
     shell:
         "python ../../utils/util_concat_dfs.py {output} {input}"
+
+rule select_covars:
+    '''
+    Select variables from data
+    '''
+    input:
+        in_csv="../../data/data_prep/combined/NiChart_{dtype}.csv",
+        dict_csv="../../config/list_covar_all.csv"
+    params:
+        dict_var = 'Name',
+        vars_list = 'MRID',
+    output:
+        "../../data/data_prep/covars/NiChart_{dtype}_covars.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_select_vars.py {input} {params} {output}"
+
+rule select_roi_vars:
+    '''
+    Select variables from data
+    '''
+    input:
+        in_csv="../../data/data_prep/combined/NiChart_{dtype}.csv",
+        dict_csv="../../config/list_MUSE_allROI.csv"
+    params:
+        dict_var = 'Code',
+        vars_list = 'MRID',
+    output:
+        "../../data/data_prep/rois/NiChart_{dtype}_rois.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_select_vars.py {input} {params} {output}"
+
+ruleorder: merge_covars_to_rois > merge_covars_to_corr_rois
+    
+rule merge_covars_to_rois:
+    '''
+    Merge covars to ROIs
+    '''
+    input:
+        covar="../../data/data_prep/covars/NiChart_{dtype}_covars.csv",
+        roi="../../data/data_prep/rois/NiChart_{dtype}_rois.csv"
+    params:
+        key_var = 'MRID'
+    output:
+        "../../data/data_prep/combined/NiChart_{dtype}_raw.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+
+rule correct_icv:
+    '''
+    Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
+    '''
+    input:
+        "../../data/data_prep/rois/NiChart_{dtype}_rois.csv"
+    params:
+        icv_var = 'MUSE_702',
+        exclude_vars = 'MRID',
+        suffix = 'NONE'
+    output:
+        "../../data/data_prep/corr_rois/NiChart_{dtype}_{corr_type}.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_corr_icv.py {input} {wildcards.corr_type} {params} {output}"
+
+rule merge_covars_to_corr_rois:
+    '''
+    Merge covars to ROIs
+    '''
+    input:
+        covar="../../data/data_prep/covars/NiChart_{dtype}_covars.csv",
+        roi="../../data/data_prep/corr_rois/NiChart_{dtype}_{ctype}.csv"
+    params:
+        key_var = 'MRID'
+    output:
+        "../../data/data_prep/combined/NiChart_{dtype}_{ctype}.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_merge_dfs.py {input} {params} {output}"

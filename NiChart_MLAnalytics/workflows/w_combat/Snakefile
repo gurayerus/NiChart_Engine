@@ -1,0 +1,159 @@
+## Import packages
+import pandas as pd
+
+## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
+##localrules: rename_muse_rois
+
+## Report data
+report: "report/workflow.rst"
+
+## Config file
+configfile: "../../config/config.yaml"
+
+## Read study list from config
+df = pd.read_csv(config["list_studies"])
+LIST_STUDIES = df.Study.tolist()
+
+###################################
+## Rules
+
+OUT_FILES = expand("../../data/combat/data/NiChart_{dtype}_{ctype}.csv", dtype = ['MUSE', 'DLMUSE'], ctype = ['normICV'])
+
+rule ALL:
+    '''
+    First rule: lists the final expected out files
+    '''
+    input: OUT_FILES
+
+rule select_vars:
+    '''
+    Select variables from data
+    '''
+    input:
+        in_csv="../../data/correct_icv/NiChart_{dtype}.csv",
+        dict_csv="../../config/list_MUSE_singleROI.csv"
+    params:
+        dict_var = 'Code',
+        vars='MRID,Age,Sex,SITE,DLICV',
+    output:
+        "../../data/combat/prep/NiChart_{dtype}.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_select_vars.py {input} {params} {output}"
+
+rule select_harmonization_sample:
+    '''
+    Select sample (using list)
+    '''
+    input:
+        sample="../../data/samples/Combat/sample_combat_ISTAG_train.csv",
+        data="../../data/combat/prep/NiChart_{dtype}.csv",
+    params:
+        key_var = 'MRID'
+    output:
+        "../../data/combat/data/NiChart_{dtype}.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+
+rule combat_train:
+    '''
+    Train combat harmonization model
+    '''    
+    input:
+        "../../data/harmonization/h{hdata}/NiChart_DLMUSE_{dtype}_r{rtype}_train.csv"
+    params:
+        batch='SITE',
+        vkey='MRID',
+        vnum='ICV',
+        vcat='Sex',
+        vspline='Age'
+    output:
+        mdl="../../data/harmonization/h{hdata}/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}.pkl.gz",
+        csv=temp("../../data/harmonization/h{hdata}/NiChart_DLMUSE_{dtype}_r{rtype}_combatOut.csv")
+    resources:
+        mem_mb=16000
+    shell:
+        "echo neuroharm -a learn -i {input} -k {params.vkey} -b {params.batch} "
+        "-n {params.vnum} -c {params.vcat} -s {params.vspline} -o {output.mdl} -u {output.csv}; "
+        "neuroharm -a learn -i {input} -k {params.vkey} -b {params.batch} "
+        "-n {params.vnum} -c {params.vcat} -s {params.vspline} -o {output.mdl} -u {output.csv}"
+
+rule combat_apply:
+    '''
+    Apply combat harmonization model to calculate harmonized values
+    '''    
+    input:
+        data="../../data/harmonization/h{hdata}/NiChart_DLMUSE_{dtype}_r{rtype}_{htype}.csv",
+        mdl="../../data/harmonization/h{hdata}/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}.pkl.gz"
+    output:
+        csv=temp("../../data/harmonization/h{hdata}/NiChart_DLMUSE_{dtype}_r{rtype}_{htype}_combatOut.csv")  
+    resources:
+        mem_mb=16000
+    shell:
+        "echo neuroharm -a apply -i {input.data} -m {input.mdl} -u {output.csv};"
+        "neuroharm -a apply -i {input.data} -m {input.mdl} -u {output.csv}"
+
+rule remove_combat_suffix:
+    '''
+    Remove combat suffix (_HARM)
+    FIXME: Ideally combat should be run with an arg to create output var names without a suffix
+    '''        
+    input:
+        "../../data/harmonization/h{hdata}/NiChart_DLMUSE_{dtype}_r{rtype}_{htype}_combatOut.csv",
+    params:
+        rm_suff='_HARM'
+    output:
+        temp("../../data/harmonization/h{hdata}/NiChart_DLMUSE_{dtype}_r{rtype}_{htype}_combatOut_nosuffix.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "echo python utils/util_remove_suffix.py {input} {params} {output}; "
+        "python utils/util_remove_suffix.py {input} {params} {output}; "
+        
+rule select_harmonization_output_vars:
+    '''
+    Select final variables from the harmonized data (MRID + ICV + ROI names)
+    '''        
+    input:
+        data="../../data/harmonization/h{hdata}/NiChart_DLMUSE_{dtype}_r{rtype}_{htype}_combatOut_nosuffix.csv",
+        rois="../../config/list_MUSE_{rtype}.csv"
+    params:
+        vars='MRID,ICV',
+    output:
+        csv=temp("../../data/harmonization/h{hdata}/NiChart_DLMUSE_{dtype}_r{rtype}_{htype}_combatOut_nosuffix_rois.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "echo python utils/util_select_vars.py {input} {params} {output}; "
+        "python utils/util_select_vars.py {input} {params} {output}; "
+
+rule copy_harmonization_model:
+    '''
+    Copy harmonization model to models
+    '''        
+    input:
+        "../../data/harmonization/h{hdata}/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}.pkl.gz"
+    output:
+        "../../models/harmonization/combatModel_NiChart_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz"
+    resources:
+        mem_mb=8000
+    shell:
+        "cp {input} {output}"
+
+rule copy_harmonized_data:
+    '''
+    Copy harmonized data
+    '''        
+    input:
+        "../../data/harmonization/h{hdata}/NiChart_DLMUSE_{dtype}_r{rtype}_all_combatOut_nosuffix_rois.csv"
+    output:
+        "../../data/data_consolidated/NiChart_DLMUSE_harmonized_{dtype}_r{rtype}_h{hdata}.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "cp {input} {output}"
+
+

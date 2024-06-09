@@ -49,6 +49,9 @@ if __name__ == "__main__":
     vars_list = sys.argv[4]
     out_csv = sys.argv[5]
 
+    # Print run command
+    print('About to run: ' + ' '.join(sys.argv))
+
     # Call the function
     select_vars(in_csv, dict_csv, dict_var, vars_list, out_csv)
 
