@@ -17,7 +17,7 @@ LIST_STUDIES = df.Study.tolist()
 ###################################
 ## Rules
 
-OUT_FILES = expand("../../data/data_prep/combined/NiChart_{dtype}.csv", dtype = ['MUSE', 'DLMUSE'])
+OUT_FILES = expand("../../data/data_prep/NiChart_{dtype}.csv", dtype = ['MUSE', 'DLMUSE'])
 
 rule ALL:
     '''
@@ -84,7 +84,7 @@ rule concat_studies:
     params:
         key_var = 'MRID'
     output:
-        "../../data/data_prep/combined/NiChart_{dtype}.csv"
+        "../../data/data_prep/NiChart_{dtype}.csv"
     resources:
         mem_mb=8000
     shell:
