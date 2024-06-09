@@ -15,7 +15,7 @@ LIST_NSAMPLE = df_tmp.NumSample.tolist()
 
 LIST_DTYPE = ['DemogClin', 'MUSE', 'DLMUSE']
 
-OUT_FILES = expand("../../data/data_subsampled/{study}-n{nsample}/{study}-n{nsample}_DemogClin.csv", zip, study = LIST_STUDY, nsample = LIST_NSAMPLE), expand("../../data/data_subsampled/{study}-n{nsample}/{study}-n{nsample}_MUSE.csv", zip, study = LIST_STUDY, nsample = LIST_NSAMPLE), expand("../../data/data_subsampled/{study}-n{nsample}/{study}-n{nsample}_DLMUSE.csv", zip, study = LIST_STUDY, nsample = LIST_NSAMPLE)
+OUT_FILES = expand("../../data/sample_studies/{study}-n{nsample}/{study}-n{nsample}_DemogClin.csv", zip, study = LIST_STUDY, nsample = LIST_NSAMPLE), expand("../../data/sample_studies/{study}-n{nsample}/{study}-n{nsample}_MUSE.csv", zip, study = LIST_STUDY, nsample = LIST_NSAMPLE), expand("../../data/sample_studies/{study}-n{nsample}/{study}-n{nsample}_DLMUSE.csv", zip, study = LIST_STUDY, nsample = LIST_NSAMPLE)
 
 ###################################
 ## Rules
@@ -30,9 +30,9 @@ rule select_sample:
     Rule for selecting a smaller subset of a study dataset
     '''
     input:
-        "../../data/init_data_istaging/DLMUSE/{study}_DLMUSE.csv",
+        "../../data/init_data_istaging/Studies/{study}/{study}_DLMUSE.csv",
     output:
-        temp("../../data/data_subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv")
+        temp("../../data/sample_studies/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv")
     params:
         out_vars = 'MRID',
     shell:
@@ -43,10 +43,10 @@ rule filter_data:
     Rule for creating data files with the selected sample
     '''
     input:
-        in_csv="../../data/init_data_istaging/{dtype}/{study}_{dtype}.csv",
-        in_list="../../data/data_subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
+        in_csv="../../data/init_data_istaging/Studies/{study}/{study}_{dtype}.csv",
+        in_list="../../data/sample_studies/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
     output:
-        "../../data/data_subsampled/{study}-n{num_sample}/{study}-n{num_sample}_{dtype}.csv"
+        "../../data/sample_studies/{study}-n{num_sample}/{study}-n{num_sample}_{dtype}.csv"
     params:
         key_var = 'MRID'
     shell:

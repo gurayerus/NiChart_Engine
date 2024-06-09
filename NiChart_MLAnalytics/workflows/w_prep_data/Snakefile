@@ -10,14 +10,19 @@ report: "report/workflow.rst"
 ## Config file
 configfile: "../../config/config.yaml"
 
+## Out dir 
+#OUT_DIR = 
+
 ## Read study list from config
-df = pd.read_csv(config["list_studies"])
+df = pd.read_csv(config["list_studies_merge"])
 LIST_STUDIES = df.Study[0:2].tolist()
+LIST_STUDIES = df.Study.tolist()
 
 ###################################
 ## Rules
 
-OUT_FILES = expand("../../data/data_prep/combined/NiChart_{dtype}_{ctype}.csv", dtype = ['MUSE', 'DLMUSE'], ctype = ['raw', 'normICV', 'percICV'])
+#OUT_FILES = expand("../../data/prep_data/combined/NiChart_{dtype}_{ctype}.csv", dtype = ['MUSE', 'DLMUSE'], ctype = ['raw', 'normICV', 'percICV'])
+OUT_FILES = expand("../../data/prep_data/combined/NiChart_{dtype}_{ctype}.csv", dtype = ['MUSE'], ctype = ['raw', 'normICV'])
 
 rule ALL:
     '''
@@ -25,15 +30,42 @@ rule ALL:
     '''
     input: OUT_FILES
     
+rule make_sample_list:
+    '''
+    Rule for selecting a smaller subset of a study dataset
+    '''
+    input:
+        "../../data/init_data_istaging/Studies/{study}/{study}_DLMUSE.csv",
+    output:
+        temp("../../data/prep_data/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv")
+    params:
+        out_vars = 'MRID',
+    shell:
+        "python ../../utils/util_subsample_df.py {input} {wildcards.num_sample} {params} {output}"
+
+rule select_sample:
+    '''
+    Rule for creating data files with the selected sample
+    '''
+    input:
+        in_csv="../../data/init_data_istaging/Studies/{study}/{study}_{dtype}.csv",
+        in_list="../../data/prep_data/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
+    output:
+        "../../data/prep_data/subsampled/{study}-n{num_sample}/{study}-n{num_sample}_{dtype}.csv"
+    params:
+        key_var = 'MRID'
+    shell:
+        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+    
 rule rename_rois:
     '''
     Rename MUSE roi indices to roi codes
     '''
     input:
-        roi="../../data/init_data_istaging/{dtype}/{study}_{dtype}.csv",
+        roi="../../data/init_data_istaging/Studies/{study}/{study}_{dtype}.csv",
         dict="../../config/list_MUSE_allROI.csv"
     output:
-        temp("../../data/data_prep/renamed/{study}_{dtype}.csv")
+        temp("../../data/prep_data/renamed/{study}_{dtype}.csv")
     params:
         var_from = 'Index',
         var_to = 'Code'
@@ -47,12 +79,45 @@ rule merge_data:
     Merge demog data to ROIs
     '''
     input:
-        demog="../../data/init_data_istaging/DemogClin/{study}_DemogClin.csv",
-        roi="../../data/data_prep/renamed/{study}_{dtype}.csv"
+        demog="../../data/init_data_istaging/Studies/{study}/{study}_DemogClin.csv",
+        roi="../../data/prep_data/renamed/{study}_{dtype}.csv"
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/data_prep/merged/{study}_{dtype}.csv")
+        temp("../../data/prep_data/merged/{study}_{dtype}.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+
+rule rename_rois_subsampled:
+    '''
+    Rename MUSE roi indices to roi codes for subsampled studies
+    '''
+    input:
+        roi="../../data/prep_data/subsampled/{study}/{study}_{dtype}.csv",
+        dict="../../config/list_MUSE_allROI.csv"
+    output:
+        temp("../../data/prep_data/renamed/{study}_{dtype}.csv")
+    params:
+        var_from = 'Index',
+        var_to = 'Code'
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_rename_df_columns.py {input} {params} {output}"
+
+rule merge_data_subsampled:
+    '''
+    Merge demog data to ROIs for subsampled studies
+    '''
+    input:
+        demog="../../data/prep_data/subsampled/{study}/{study}_DemogClin.csv",
+        roi="../../data/prep_data/renamed/{study}_{dtype}.csv"
+    params:
+        key_var = 'MRID'
+    output:
+        temp("../../data/prep_data/merged/{study}_{dtype}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -63,11 +128,11 @@ rule concat_studies:
     Combine studies into a single csv
     '''
     input:
-        expand("../../data/data_prep/merged/{study}_{{dtype}}.csv", study=LIST_STUDIES)
+        expand("../../data/prep_data/merged/{study}_{{dtype}}.csv", study=LIST_STUDIES)
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/data_prep/combined/NiChart_{dtype}.csv")
+        temp("../../data/prep_data/combined/NiChart_{dtype}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -78,13 +143,13 @@ rule select_covars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/data_prep/combined/NiChart_{dtype}.csv",
+        in_csv="../../data/prep_data/combined/NiChart_{dtype}.csv",
         dict_csv="../../config/list_covar_all.csv"
     params:
         dict_var = 'Name',
         vars_list = 'MRID',
     output:
-        "../../data/data_prep/covars/NiChart_{dtype}_covars.csv"
+        "../../data/prep_data/covars/NiChart_{dtype}_covars.csv"
     resources:
         mem_mb=8000
     shell:
@@ -95,13 +160,13 @@ rule select_roi_vars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/data_prep/combined/NiChart_{dtype}.csv",
+        in_csv="../../data/prep_data/combined/NiChart_{dtype}.csv",
         dict_csv="../../config/list_MUSE_allROI.csv"
     params:
         dict_var = 'Code',
         vars_list = 'MRID',
     output:
-        "../../data/data_prep/rois/NiChart_{dtype}_rois.csv"
+        "../../data/prep_data/rois/NiChart_{dtype}_rois.csv"
     resources:
         mem_mb=8000
     shell:
@@ -114,12 +179,12 @@ rule merge_covars_to_rois:
     Merge covars to ROIs
     '''
     input:
-        covar="../../data/data_prep/covars/NiChart_{dtype}_covars.csv",
-        roi="../../data/data_prep/rois/NiChart_{dtype}_rois.csv"
+        covar="../../data/prep_data/covars/NiChart_{dtype}_covars.csv",
+        roi="../../data/prep_data/rois/NiChart_{dtype}_rois.csv"
     params:
         key_var = 'MRID'
     output:
-        "../../data/data_prep/combined/NiChart_{dtype}_raw.csv"
+        "../../data/prep_data/combined/NiChart_{dtype}_raw.csv"
     resources:
         mem_mb=8000
     shell:
@@ -130,13 +195,13 @@ rule correct_icv:
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        "../../data/data_prep/rois/NiChart_{dtype}_rois.csv"
+        "../../data/prep_data/rois/NiChart_{dtype}_rois.csv"
     params:
         icv_var = 'MUSE_702',
         exclude_vars = 'MRID',
         suffix = 'NONE'
     output:
-        "../../data/data_prep/corr_rois/NiChart_{dtype}_{corr_type}.csv"
+        "../../data/prep_data/corr_rois/NiChart_{dtype}_{corr_type}.csv"
     resources:
         mem_mb=8000
     shell:
@@ -147,12 +212,12 @@ rule merge_covars_to_corr_rois:
     Merge covars to ROIs
     '''
     input:
-        covar="../../data/data_prep/covars/NiChart_{dtype}_covars.csv",
-        roi="../../data/data_prep/corr_rois/NiChart_{dtype}_{ctype}.csv"
+        covar="../../data/prep_data/covars/NiChart_{dtype}_covars.csv",
+        roi="../../data/prep_data/corr_rois/NiChart_{dtype}_{ctype}.csv"
     params:
         key_var = 'MRID'
     output:
-        "../../data/data_prep/combined/NiChart_{dtype}_{ctype}.csv"
+        "../../data/prep_data/combined/NiChart_{dtype}_{ctype}.csv"
     resources:
         mem_mb=8000
     shell:

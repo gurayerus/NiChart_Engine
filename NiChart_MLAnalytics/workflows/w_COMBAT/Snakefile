@@ -21,7 +21,7 @@ OUT_FILES = expand("../../data/combat/data/NiChart_{dtype}_{ctype}.csv", dtype =
 
 rule ALL:
     '''
-    First rule: lists the final expected out files
+    First rule: lists the target output files
     '''
     input: OUT_FILES
 
@@ -36,7 +36,7 @@ rule select_vars:
         dict_var = 'Code',
         vars='MRID,Age,Sex,SITE,DLICV',
     output:
-        "../../data/combat/prep/NiChart_{dtype}.csv"
+        "../../data/combat/sel_vars/NiChart_{dtype}.csv"
     resources:
         mem_mb=8000
     shell:

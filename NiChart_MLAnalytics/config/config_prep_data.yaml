@@ -1,3 +1,4 @@
+version_config: v1.1
 subsample_num: 1000
 subsample_list_study: ../../config/subsample_list_studies.csv
 list_rois_all: ../../config/list_MUSE_allROI.csv

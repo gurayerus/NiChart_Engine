@@ -30,13 +30,16 @@ def concat_dfs(out_csv, list_in_csv):
 
 if __name__ == "__main__":
     # Access arguments from command line using sys.argv
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 3:
         print("Error: Please provide all required arguments")
         print("Usage: python concat_dfs.py out_csv.csv in_csv1.csv in_csv2.csv ...")
         sys.exit(1)
 
     out_csv = sys.argv[1]
     list_in_csv = sys.argv[2:]
+
+    # Print run command
+    print('About to run: ' + ' '.join(sys.argv))
 
     # Call the function
     concat_dfs(out_csv, list_in_csv)
