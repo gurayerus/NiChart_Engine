@@ -30,7 +30,7 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/correct_icv/NiChart_{dtype}.csv",
+        in_csv="../../data/data_prep/combined/NiChart_{dtype}.csv",
         dict_csv="../../config/list_MUSE_singleROI.csv"
     params:
         dict_var = 'Code',
