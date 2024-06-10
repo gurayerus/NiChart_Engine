@@ -31,6 +31,6 @@ module load plink/2.20210701
 ## Run command
 cmd="plink2 --bgen ${bgen} ${ref} --sample ${sample} --maf ${maf} --geno ${geno} --hwe ${hwe} --mind ${mind} --rm-dup ${rmdup} $mbed --out ${fout}"
 echo; echo "About to run: $cmd"; echo
-$cmd
+# $cmd
 
                                                                                                                                         
