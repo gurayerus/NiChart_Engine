@@ -1,5 +1,5 @@
 version: prep_data_vtest1
-version_init_data: ISTAGING-v1.2
+dir_input: init_data/ISTAGING-v1.2
 list_covar_all: list_covar_all.csv
 list_MUSE_all: list_MUSE_all.csv
 list_studies_merge: list_studies_merge.csv

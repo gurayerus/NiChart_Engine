@@ -1,8 +1,6 @@
-version: v_test
-version_data_prep: v_test
-list_covar_all: list_covar_all.csv
-list_MUSE_all: list_MUSE_all.csv
-list_studies_merge: list_studies_merge.csv
+version: combat_vtest1
+dir_input: prep_data/prep_data_vtest1
+list_MUSE_single: list_MUSE_single.csv
 roi_types:
  - MUSE
 corr_types:

@@ -15,11 +15,13 @@ configfile: "../../config/config_COMBAT.yaml"
 ###################################
 ## Out file names
 
-OUT_CONFIG = expand("../../data/prep_data/{vconf}/config/{cname}", cname = ["config_prep_data.yaml", "list_covar_all.csv", "list_MUSE_all.csv", "list_studies_merge.csv"], vconf = config["version"])
+OUT_CONFIG = expand("../../data/COMBAT/{vconf}/config/{cname}", cname = ["config_COMBAT.yaml", "list_MUSE_single.csv"], vconf = config["version"])
 
-OUT_RESULTS = expand("../../data/COMBAT/{vconf}/combined/NiChart_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], vconf = config["version"])
+OUT_RESULTS = expand("../../data/COMBAT/{vconf}/data/NiChart_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], vconf = config["version"])
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
+
+print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
 ###################################
 ## Rules
@@ -37,7 +39,7 @@ rule copy_config:
     input:
         "../../config/{cname}"
     output:
-        "../../data/prep_data/{vconf}/config/{cname}"
+        expand("../../data/COMBAT/{vconf}/config/{{cname}}", vconf = config["version"])
     shell:
         "cp -v {input} {output}"
 
@@ -46,13 +48,13 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/data_prep/combined/NiChart_{dtype}.csv",
-        dict_csv="../../config/list_MUSE_singleROI.csv"
+        in_csv=expand("../../data/{vinit}/combined/NiChart_{{dtype}}.csv", vinit = config["dir_input"]), 
+        dict_csv=expand("../../config/{rtype}", rtype = config["list_MUSE_single"])
     params:
         dict_var = 'Code',
         vars='MRID,Age,Sex,SITE,DLICV',
     output:
-        "../../data/combat/sel_vars/NiChart_{dtype}.csv"
+        "../../data/COMBAT/{vconf}/sel_vars/NiChart_{dtype}.csv"
     resources:
         mem_mb=8000
     shell:
@@ -63,12 +65,12 @@ rule select_harmonization_sample:
     Select sample (using list)
     '''
     input:
-        sample="../../data/samples/Combat/sample_combat_ISTAG_train.csv",
-        data="../../data/combat/prep/NiChart_{dtype}.csv",
+        sample="../../data/samples/COMBAT/sample_COMBAT_ISTAG_train.csv",
+        data="../../data/COMBAT/{vconf}/sel_vars/NiChart_{dtype}.csv",
     params:
         key_var = 'MRID'
     output:
-        "../../data/combat/data/NiChart_{dtype}.csv"
+        "../../data/COMBAT/{vconf}/data/NiChart_{dtype}.csv"
     resources:
         mem_mb=8000
     shell:
