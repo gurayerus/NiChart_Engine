@@ -1,4 +1,4 @@
-version_config: conf_vtest
+version: v_test
 list_covar_all: list_covar_all.csv
 list_MUSE_all: list_MUSE_all.csv
 list_studies_merge: list_studies_merge.csv

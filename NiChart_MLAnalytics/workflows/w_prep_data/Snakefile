@@ -11,11 +11,8 @@ report: "report/workflow.rst"
 
 ## Config file
 configfile: "../../config/config_prep_data.yaml"
-    
-configname = os.environ.get("CONFIG_FILE")
 
 ## Config version
-VCONF = config["version_config"]
 
 ## Read study list from config
 df = pd.read_csv("../../config/" + config["list_studies_merge"])
@@ -23,13 +20,16 @@ LIST_STUDIES = df.Study[0:2].tolist()
 LIST_STUDIES = df.Study.tolist()
 
 ###################################
-## Rules
+## Out file names
 
-OUT_CONFIG = expand("../../data/prep_data/{vconf}/config/{cname}", cname = ["config_prep_data.yaml", "list_covar_all.csv", "list_MUSE_all.csv", "list_studies_merge.csv"], vconf = config["version_config"])
+OUT_CONFIG = expand("../../data/prep_data/{vconf}/config/{cname}", cname = ["config_prep_data.yaml", "list_covar_all.csv", "list_MUSE_all.csv", "list_studies_merge.csv"], vconf = config["version"])
 
-OUT_RESULTS = expand("../../data/prep_data/{vconf}/combined/NiChart_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], vconf = config["version_config"])
+OUT_RESULTS = expand("../../data/prep_data/{vconf}/combined/NiChart_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], vconf = config["version"])
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
+
+###################################
+## Rules
 
 rule ALL:
     '''
