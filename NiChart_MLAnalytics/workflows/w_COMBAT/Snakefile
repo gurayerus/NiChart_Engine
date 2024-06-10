@@ -1,29 +1,45 @@
 ## Import packages
 import pandas as pd
+import os
+import sys
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
 ##localrules: rename_muse_rois
-
+    
 ## Report data
 report: "report/workflow.rst"
 
 ## Config file
-configfile: "../../config/config.yaml"
+configfile: "../../config/config_COMBAT.yaml"
 
-## Read study list from config
-df = pd.read_csv(config["list_studies"])
-LIST_STUDIES = df.Study.tolist()
+###################################
+## Out file names
+
+OUT_CONFIG = expand("../../data/prep_data/{vconf}/config/{cname}", cname = ["config_prep_data.yaml", "list_covar_all.csv", "list_MUSE_all.csv", "list_studies_merge.csv"], vconf = config["version"])
+
+OUT_RESULTS = expand("../../data/COMBAT/{vconf}/combined/NiChart_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], vconf = config["version"])
+
+OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
 ###################################
 ## Rules
 
-OUT_FILES = expand("../../data/combat/data/NiChart_{dtype}_{ctype}.csv", dtype = ['MUSE', 'DLMUSE'], ctype = ['normICV'])
-
 rule ALL:
     '''
-    First rule: lists the target output files
+    First rule: lists the final expected out files
     '''
     input: OUT_FILES
+
+rule copy_config:
+    '''
+    Rule for copying config files to output dir
+    '''
+    input:
+        "../../config/{cname}"
+    output:
+        "../../data/prep_data/{vconf}/config/{cname}"
+    shell:
+        "cp -v {input} {output}"
 
 rule select_vars:
     '''

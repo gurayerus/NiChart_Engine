@@ -12,11 +12,8 @@ report: "report/workflow.rst"
 ## Config file
 configfile: "../../config/config_prep_data.yaml"
 
-## Config version
-
 ## Read study list from config
 df = pd.read_csv("../../config/" + config["list_studies_merge"])
-LIST_STUDIES = df.Study[0:2].tolist()
 LIST_STUDIES = df.Study.tolist()
 
 ###################################
@@ -28,6 +25,8 @@ OUT_RESULTS = expand("../../data/prep_data/{vconf}/combined/NiChart_{dtype}_{cty
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
+print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
+
 ###################################
 ## Rules
 
@@ -36,6 +35,7 @@ rule ALL:
     First rule: lists the final expected out files
     '''
     input: OUT_FILES
+    #input:"../../data/prep_data/prep_data_vtest1/subsampled/ADNI-n300/sample_ADNI-n300.csv"
 
 rule copy_config:
     '''
@@ -53,9 +53,9 @@ rule make_sample_list:
     Rule for selecting a smaller subset of a study dataset
     '''
     input:
-        "../../data/init_data_istaging/Studies/{study}/{study}_DLMUSE.csv",
+        expand("../../data/init_data/{vinit}/Studies/{{study}}/{{study}}_DLMUSE.csv", vinit = config["version_init_data"]),
     output:
-        temp("../../data/prep_data/{vconf}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv")
+        "../../data/prep_data/{vconf}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
     params:
         out_vars = 'MRID',
     shell:
@@ -66,7 +66,7 @@ rule select_sample:
     Rule for creating data files with the selected sample
     '''
     input:
-        in_csv="../../data/init_data_istaging/Studies/{study}/{study}_{dtype}.csv",
+        in_csv=expand("../../data/init_data/{vinit}/Studies/{{study}}/{{study}}_{{dtype}}.csv", vinit = config["version_init_data"]),
         in_list="../../data/prep_data/{vconf}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
     output:
         "../../data/prep_data/{vconf}/subsampled/{study}-n{num_sample}/{study}-n{num_sample}_{dtype}.csv"
@@ -80,7 +80,7 @@ rule rename_rois:
     Rename MUSE roi indices to roi codes
     '''
     input:
-        roi="../../data/init_data_istaging/Studies/{study}/{study}_{dtype}.csv",
+        roi=expand("../../data/init_data/{vinit}/Studies/{{study}}/{{study}}_{{dtype}}.csv", vinit = config["version_init_data"]),
         dict=expand("../../config/{conf}", conf = config["list_MUSE_all"])
     output:
         temp("../../data/prep_data/{vconf}/renamed/{study}_{dtype}.csv")
@@ -97,7 +97,7 @@ rule merge_data:
     Merge demog data to ROIs
     '''
     input:
-        demog="../../data/init_data_istaging/Studies/{study}/{study}_DemogClin.csv",
+        demog=expand("../../data/init_data/{vinit}/Studies/{{study}}/{{study}}_DemogClin.csv", vinit = config["version_init_data"]),
         roi="../../data/prep_data/{vconf}/renamed/{study}_{dtype}.csv"
     params:
         key_var = 'MRID'
