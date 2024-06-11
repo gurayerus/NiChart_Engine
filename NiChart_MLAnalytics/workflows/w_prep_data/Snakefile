@@ -19,13 +19,14 @@ LIST_STUDIES = df.Study.tolist()
 ###################################
 ## Out file names
 
-OUT_CONFIG = expand("../../data/prep_data/{vconf}/config/{cname}", cname = ["config_prep_data.yaml", "list_covar_all.csv", "list_MUSE_all.csv", "list_studies_merge.csv"], vconf = config["version"])
+OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = ["config_prep_data.yaml", "list_covar_all.csv", "list_MUSE_all.csv", "list_studies_merge.csv"], dir_output = config["dir_output"])
 
-OUT_RESULTS = expand("../../data/prep_data/{vconf}/combined/NiChart_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], vconf = config["version"])
+OUT_RESULTS = expand("../../data/{dir_output}/combined/NiChart_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
+input()
 
 ###################################
 ## Rules
@@ -43,7 +44,7 @@ rule copy_config:
     input:
         "../../config/{cname}"
     output:
-        expand("../../data/prep_data/{vconf}/config/{{cname}}", vconf = config["version"])
+        expand("../../data/{dir_output}/config/{{cname}}", dir_output = config["dir_output"])
     shell:
         "cp -v {input} {output}"
     
@@ -54,7 +55,7 @@ rule make_sample_list:
     input:
         expand("../../data/{vinit}/Studies/{{study}}/{{study}}_DLMUSE.csv", vinit = config["dir_input"]),
     output:
-        "../../data/prep_data/{vconf}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
+        "../../data/{dir_output}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
     params:
         out_vars = 'MRID',
     shell:
@@ -66,9 +67,9 @@ rule select_sample:
     '''
     input:
         in_csv=expand("../../data/{vinit}/Studies/{{study}}/{{study}}_{{dtype}}.csv", vinit = config["dir_input"]),
-        in_list="../../data/prep_data/{vconf}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
+        in_list="../../data/{dir_output}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
     output:
-        "../../data/prep_data/{vconf}/subsampled/{study}-n{num_sample}/{study}-n{num_sample}_{dtype}.csv"
+        "../../data/{dir_output}/subsampled/{study}-n{num_sample}/{study}-n{num_sample}_{dtype}.csv"
     params:
         key_var = 'MRID'
     shell:
@@ -82,7 +83,7 @@ rule rename_rois:
         roi=expand("../../data/{vinit}/Studies/{{study}}/{{study}}_{{dtype}}.csv", vinit = config["dir_input"]),
         dict=expand("../../config/{conf}", conf = config["list_MUSE_all"])
     output:
-        temp("../../data/prep_data/{vconf}/renamed/{study}_{dtype}.csv")
+        temp("../../data/{dir_output}/renamed/{study}_{dtype}.csv")
     params:
         var_from = 'Index',
         var_to = 'Code'
@@ -97,11 +98,11 @@ rule merge_data:
     '''
     input:
         demog=expand("../../data/{vinit}/Studies/{{study}}/{{study}}_DemogClin.csv", vinit = config["dir_input"]),
-        roi="../../data/prep_data/{vconf}/renamed/{study}_{dtype}.csv"
+        roi="../../data/{dir_output}/renamed/{study}_{dtype}.csv"
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/prep_data/{vconf}/merged/{study}_{dtype}.csv")
+        temp("../../data/{dir_output}/merged/{study}_{dtype}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -112,10 +113,10 @@ rule rename_rois_subsampled:
     Rename MUSE roi indices to roi codes for subsampled studies
     '''
     input:
-        roi="../../data/prep_data/{vconf}/subsampled/{study}/{study}_{dtype}.csv",
+        roi="../../data/{dir_output}/subsampled/{study}/{study}_{dtype}.csv",
         dict=expand("../../config/{conf}", conf = config["list_MUSE_all"])
     output:
-        temp("../../data/prep_data/{vconf}/renamed/{study}_{dtype}.csv")
+        temp("../../data/{dir_output}/renamed/{study}_{dtype}.csv")
     params:
         var_from = 'Index',
         var_to = 'Code'
@@ -129,12 +130,12 @@ rule merge_data_subsampled:
     Merge demog data to ROIs for subsampled studies
     '''
     input:
-        demog="../../data/prep_data/{vconf}/subsampled/{study}/{study}_DemogClin.csv",
-        roi="../../data/prep_data/{vconf}/renamed/{study}_{dtype}.csv"
+        demog="../../data/{dir_output}/subsampled/{study}/{study}_DemogClin.csv",
+        roi="../../data/{dir_output}/renamed/{study}_{dtype}.csv"
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/prep_data/{vconf}/merged/{study}_{dtype}.csv")
+        temp("../../data/{dir_output}/merged/{study}_{dtype}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -145,11 +146,11 @@ rule concat_studies:
     Combine studies into a single csv
     '''
     input:
-        expand("../../data/prep_data/{{vconf}}/merged/{study}_{{dtype}}.csv", study=LIST_STUDIES)
+        expand("../../data/{{dir_output}}/merged/{study}_{{dtype}}.csv", study=LIST_STUDIES)
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/prep_data/{vconf}/combined/NiChart_{dtype}.csv")
+        temp("../../data/{dir_output}/combined/NiChart_{dtype}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -160,13 +161,13 @@ rule select_covars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/prep_data/{vconf}/combined/NiChart_{dtype}.csv",
+        in_csv="../../data/{dir_output}/combined/NiChart_{dtype}.csv",
         dict_csv=expand("../../config/{conf}", conf = config["list_covar_all"])        
     params:
         dict_var = 'Name',
         vars_list = 'MRID',
     output:
-        "../../data/prep_data/{vconf}/covars/NiChart_{dtype}_covars.csv"
+        "../../data/{dir_output}/covars/NiChart_{dtype}_covars.csv"
     resources:
         mem_mb=8000
     shell:
@@ -177,13 +178,13 @@ rule select_roi_vars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/prep_data/{vconf}/combined/NiChart_{dtype}.csv",
+        in_csv="../../data/{dir_output}/combined/NiChart_{dtype}.csv",
         dict=expand("../../config/{conf}", conf = config["list_MUSE_all"])
     params:
         dict_var = 'Code',
         vars_list = 'MRID',
     output:
-        "../../data/prep_data/{vconf}/rois/NiChart_{dtype}_rois.csv"
+        "../../data/{dir_output}/rois/NiChart_{dtype}_rois.csv"
     resources:
         mem_mb=8000
     shell:
@@ -196,12 +197,12 @@ rule merge_covars_to_rois:
     Merge covars to ROIs
     '''
     input:
-        covar="../../data/prep_data/{vconf}/covars/NiChart_{dtype}_covars.csv",
-        roi="../../data/prep_data/{vconf}/rois/NiChart_{dtype}_rois.csv"
+        covar="../../data/{dir_output}/covars/NiChart_{dtype}_covars.csv",
+        roi="../../data/{dir_output}/rois/NiChart_{dtype}_rois.csv"
     params:
         key_var = 'MRID'
     output:
-        "../../data/prep_data/{vconf}/combined/NiChart_{dtype}_raw.csv"
+        "../../data/{dir_output}/combined/NiChart_{dtype}_raw.csv"
     resources:
         mem_mb=8000
     shell:
@@ -212,13 +213,13 @@ rule correct_icv:
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        "../../data/prep_data/{vconf}/rois/NiChart_{dtype}_rois.csv"
+        "../../data/{dir_output}/rois/NiChart_{dtype}_rois.csv"
     params:
         icv_var = 'MUSE_702',
         exclude_vars = 'MRID',
         suffix = 'NONE'
     output:
-        "../../data/prep_data/{vconf}/corr_rois/NiChart_{dtype}_{corr_type}.csv"
+        "../../data/{dir_output}/corr_rois/NiChart_{dtype}_{corr_type}.csv"
     resources:
         mem_mb=8000
     shell:
@@ -229,12 +230,12 @@ rule merge_covars_to_corr_rois:
     Merge covars to ROIs
     '''
     input:
-        covar="../../data/prep_data/{vconf}/covars/NiChart_{dtype}_covars.csv",
-        roi="../../data/prep_data/{vconf}/corr_rois/NiChart_{dtype}_{ctype}.csv"
+        covar="../../data/{dir_output}/covars/NiChart_{dtype}_covars.csv",
+        roi="../../data/{dir_output}/corr_rois/NiChart_{dtype}_{ctype}.csv"
     params:
         key_var = 'MRID'
     output:
-        "../../data/prep_data/{vconf}/combined/NiChart_{dtype}_{ctype}.csv"
+        "../../data/{dir_output}/combined/NiChart_{dtype}_{ctype}.csv"
     resources:
         mem_mb=8000
     shell:
