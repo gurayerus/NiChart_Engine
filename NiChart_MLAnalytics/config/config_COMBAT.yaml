@@ -1,5 +1,6 @@
 version: combat_vtest1
 dir_input: prep_data/prep_data_vtest1
+dir_output: COMBAT/COMBAT_vtest1
 list_MUSE_single: list_MUSE_single.csv
 roi_types:
  - MUSE
