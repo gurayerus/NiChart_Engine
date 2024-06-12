@@ -1,13 +1,11 @@
 ## Import packages
 import pandas as pd
-import os
-import sys
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-##localrules: rename_muse_rois
+localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_data, rename_rois_subsampled, merge_data_subsampled, concat_studies, select_covars, select_roi_vars, merge_covars_to_rois, correct_icv, merge_covars_to_corr_rois
     
-## Report data
-report: "report/workflow.rst"
+### Report data
+#report: "report/workflow.rst"
 
 ## Config file
 configfile: "../../config/config_prep_data.yaml"
