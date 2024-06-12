@@ -8,3 +8,4 @@ roi_types:
  - MUSE
 corr_types:
  - raw
+ - normICV

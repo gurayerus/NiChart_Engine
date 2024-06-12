@@ -25,8 +25,7 @@ OUT_RESULTS = expand("../../data/{dir_output}/combined/NiChart_{dtype}_{ctype}.c
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
-print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
-input()
+print("Target out files:" + '\n' + '\n'.join(OUT_FILES) + '\n')
 
 ###################################
 ## Rules
@@ -53,7 +52,7 @@ rule make_sample_list:
     Rule for selecting a smaller subset of a study dataset
     '''
     input:
-        expand("../../data/{vinit}/Studies/{{study}}/{{study}}_DLMUSE.csv", vinit = config["dir_input"]),
+        expand("../../data/{dir_input}/Studies/{{study}}/{{study}}_DLMUSE.csv", dir_input = config["dir_input"]),
     output:
         "../../data/{dir_output}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
     params:
@@ -66,7 +65,7 @@ rule select_sample:
     Rule for creating data files with the selected sample
     '''
     input:
-        in_csv=expand("../../data/{vinit}/Studies/{{study}}/{{study}}_{{dtype}}.csv", vinit = config["dir_input"]),
+        in_csv=expand("../../data/{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv", dir_input = config["dir_input"]),
         in_list="../../data/{dir_output}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
     output:
         "../../data/{dir_output}/subsampled/{study}-n{num_sample}/{study}-n{num_sample}_{dtype}.csv"
@@ -80,7 +79,7 @@ rule rename_rois:
     Rename MUSE roi indices to roi codes
     '''
     input:
-        roi=expand("../../data/{vinit}/Studies/{{study}}/{{study}}_{{dtype}}.csv", vinit = config["dir_input"]),
+        roi=expand("../../data/{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv", dir_input = config["dir_input"]),
         dict=expand("../../config/{conf}", conf = config["list_MUSE_all"])
     output:
         temp("../../data/{dir_output}/renamed/{study}_{dtype}.csv")
@@ -97,7 +96,7 @@ rule merge_data:
     Merge demog data to ROIs
     '''
     input:
-        demog=expand("../../data/{vinit}/Studies/{{study}}/{{study}}_DemogClin.csv", vinit = config["dir_input"]),
+        demog=expand("../../data/{dir_input}/Studies/{{study}}/{{study}}_DemogClin.csv", dir_input = config["dir_input"]),
         roi="../../data/{dir_output}/renamed/{study}_{dtype}.csv"
     params:
         key_var = 'MRID'
