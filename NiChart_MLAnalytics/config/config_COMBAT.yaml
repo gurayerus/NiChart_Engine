@@ -1,9 +1,9 @@
 version: combat_vtest1
 dir_input: prep_data/prep_data_vtest1
 dir_output: COMBAT/COMBAT_vtest1
-list_ROI: list_MUSE_single.csv
+list_ROIs: list_MUSE_single.csv
 sample_COMBAT_train: sample_COMBAT_ISTAG_train.csv
-sample_COMBAT_test: sample_COMBAT_ISTAG_test.csv
+sample_COMBAT_test: sample_COMBAT_ISTAG_all.csv
 roi_types:
  - MUSE
 corr_types:

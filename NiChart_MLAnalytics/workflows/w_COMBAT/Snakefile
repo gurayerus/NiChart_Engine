@@ -15,7 +15,7 @@ configfile: "../../config/config_COMBAT.yaml"
 ###################################
 ## Out file names
 
-OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = ["config_COMBAT.yaml", config["sample_COMBAT_train"], config["sample_COMBAT_test"], config["list_ROI"]], dir_output = config["dir_output"])
+OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = ["config_COMBAT.yaml", config["sample_COMBAT_train"], config["sample_COMBAT_test"], config["list_ROIs"]], dir_output = config["dir_output"])
 
 OUT_RESULTS = expand("../../data/{dir_output}/data/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
@@ -53,7 +53,7 @@ rule select_vars:
     '''
     input:
         in_csv=expand("../../data/{dir_input}/combined/combined_{{dtype}}.csv", dir_input = config["dir_input"]), 
-        dict_csv=expand("../../config/{rtype}", rtype = config["list_ROI"])
+        dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
         covars ='MRID,Age,Sex,SITE,DLICV',
@@ -70,7 +70,7 @@ rule select_COMBAT_sample:
     '''
     input:
         sample_csv=expand("../../data/samples/COMBAT/{sample}", sample = config["sample_COMBAT_train"]),
-        data_csv=expand("../../data/{dir_input}/sel_vars/combined_{{dtype}}.csv", dir_input = config["dir_input"]),
+        data_csv=expand("../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv", dir_output = config["dir_output"]),
     params:
         key_var = 'MRID'
     output:
@@ -89,7 +89,7 @@ rule COMBAT_train:
     params:
         batch='SITE',
         vkey='MRID',
-        vnum='ICV',
+        vnum='DLICV',
         vcat='Sex',
         vspline='Age'
     output:
@@ -98,10 +98,7 @@ rule COMBAT_train:
     resources:
         mem_mb=16000
     shell:
-        "echo neuroharm -a learn -i {input} -k {params.vkey} -b {params.batch} "
-        "-n {params.vnum} -c {params.vcat} -s {params.vspline} -o {output.mdl} -u {output.csv}; "
-        "neuroharm -a learn -i {input} -k {params.vkey} -b {params.batch} "
-        "-n {params.vnum} -c {params.vcat} -s {params.vspline} -o {output.mdl} -u {output.csv}"
+        "bash ../../utils/util_combat_train.sh {input} {params} {output}"
 
 rule COMBAT_apply:
     '''
@@ -128,29 +125,29 @@ rule remove_COMBAT_suffix:
     params:
         rm_suff='_HARM'
     output:
-        temp("../../data/{dir_output}/harmonized/combined_{dtype}_COMBATOut_nosuffix.csv")
+        "../../data/{dir_output}/harmonized/combined_{dtype}_COMBATOut_nosuffix.csv"
     resources:
         mem_mb=8000
     shell:
-        "echo python utils/util_remove_suffix.py {input} {params} {output}; "
-        "python utils/util_remove_suffix.py {input} {params} {output}; "
+        "python ../../utils/util_remove_suffix.py {input} {params} {output}; "
         
-rule select_COMBAT_output_vars:
+rule select_output_vars:
     '''
     Select final variables from the harmonized data (MRID + ICV + ROI names)
     '''        
     input:
-        data="../../data/{dir_output}/harmonized/combined_{dtype}_COMBATOut_nosuffix.csv",
-        rois=expand("../../config/{rtype}", rtype = config["list_ROI"])
+        in_csv="../../data/{dir_output}/harmonized/combined_{dtype}_COMBATOut_nosuffix.csv",
+        dict=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
+        dict_var = 'Code',
         covars='MRID,ICV'
     output:
         csv="../../data/{dir_output}/harmonized/combined_{dtype}_COMBATOut.csv"
     resources:
         mem_mb=8000
     shell:
-        "echo python utils/util_select_vars.py {input} {params} {output}; "
-        "python utils/util_select_vars.py {input} {params} {output}; "
+        "python ../../utils/util_select_vars.py {input} {params} {output}"
+
 
 #rule copy_COMBAT_model:
     #'''
