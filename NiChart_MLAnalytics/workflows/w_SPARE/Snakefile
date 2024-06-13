@@ -24,8 +24,9 @@ OUT_FILES=["../../data/SPARE/SPARE_vtest1/harmonized/combined_MUSE_raw_test_SPAR
 
 OUT_FILES=["../../data/SPARE/SPARE_vtest1/sel_sample/AD/combined_MUSE_raw_all_renamed.csv"]
 
-OUT_FILES=["../../data/SPARE/SPARE_vtest1/split_sample/combined_MUSE_raw_train.csv"]
+OUT_FILES=["../../data/SPARE/SPARE_vtest1/train_test/AD/combined_MUSE_raw_train.csv"]
 
+OUT_FILES=["../../data/SPARE/SPARE_vtest1/pred/combined_MUSE_raw_test_SPARE-AD.csv"]
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
@@ -108,61 +109,56 @@ rule split_train_test:
         strat_vars = 'Sex,Target',
         test_ratio = '0.4'
     output:
-        "../../data/{dir_output}/split_sample/{stype}/combined_{dtype}_train.csv",
-        "../../data/{dir_output}/split_sample/{stype}/combined_{dtype}_test.csv",
+        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_train.csv",
+        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
     resources:
         mem_mb=8000
     shell:
-        "echo python utils/util_split_train_test.py {input} {params} {output}; "
-        "python utils/util_split_train_test.py {input} {params} {output}"
+        "python ../../utils/util_split_train_test.py {input} {params} {output}"
 
 rule sparesvm_train:
     '''
     Train SPARE model
     '''
     input:
-        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_train.csv"
+        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_train.csv"
     params:
         vkey='MRID',
+        target = 'Target'
     output:
-        "../../data/SPARE/s{stype}/r{rtype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
+        "../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
     resources:
         mem_mb=16000
     shell:
-        "echo spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {wildcards.stype} "
-        "-mt SVM -k linear -pg 1; "
-        "spare_score -a train -i {input} -o {output} -kv {params.vkey} -t {wildcards.stype} "
-        "-mt SVM -k linear -pg 1"
+        "bash ../../utils/util_spare_train.sh {input} {params} {output}"
         
 rule sparesvm_test:
     '''
     Test SPARE model using the split test sample
     '''
     input:
-        data="../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_test.csv",
-        mdl="../../data/SPARE/s{stype}/r{rtype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
+        data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
+        mdl="../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
     output:
-        csv="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
+        csv="../../data/{dir_output}/pred/combined_{dtype}_test_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:
-        "echo spare_score -a test -i {input.data} -m {input.mdl} -o {output.csv}; "
-        "spare_score -a test -i {input.data} -m {input.mdl} -o {output.csv}"
+        "bash ../../utils/util_spare_test.sh {input} {output}"
 
-rule sparesvm_eval:
-    '''
-    Evaluate accuracy on test sample
-    '''
-    input:
-        data="../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_test.csv",
-        pred="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
-    output:
-        csv="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_eval.csv"
-    resources:
-        mem_mb=8000
-    shell:
-        "echo python utils/util_eval_spare.py {input} {wildcards.stype} {output}; "
-        "python utils/util_eval_spare.py {input} {wildcards.stype} {output}"
+#rule sparesvm_eval:
+    #'''
+    #Evaluate accuracy on test sample
+    #'''
+    #input:
+        #data="../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_test.csv",
+        #pred="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
+    #output:
+        #csv="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_eval.csv"
+    #resources:
+        #mem_mb=8000
+    #shell:
+        #"python utils/util_eval_spare.py {input} {wildcards.stype} {output}"
 
 #rule copy_model:
     #'''
