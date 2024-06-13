@@ -1,91 +1,115 @@
+## Import packages
+import pandas as pd
+import os
+import sys
 
-configfile: "../../config/config.yaml"
-
+## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
 localrules: select_sample_spare, merge_rois, copy_model, split_train_test
 
-## Read lists
-import pandas as pd
-
-df = pd.read_csv(config["list_studies"])
-LIST_STUDIES = df.Study.tolist()
-
-df = pd.read_csv(config["list_rois_primary"])
-LIST_ROIS = df.Index.tolist()
-
-#df = pd.read_csv(config["list_SPARE_models"])
-#LIST_SPARE_MODELS = df.Model.tolist()
-
-## Classification models
-LIST_SPARE = ['Age', 'AD', 'Diabetes', 'Hyperlipidemia', 'Hypertension', 'Obesity', 'Smoking']
-LIST_SPARE = ['Smoking']
+## Config file
+configfile: "../../config/config_SPARE.yaml"
 
 ###################################
-## Function definitions
+## Out file names
+
+OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = ["config_SPARE.yaml", config["sample_SPARE_train"], config["sample_SPARE_test"], config["list_ROIs"]], dir_output = config["dir_output"])
+
+OUT_RESULTS = expand("../../data/{dir_output}/data/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+
+OUT_FILES = OUT_CONFIG + OUT_RESULTS
+#OUT_FILES = ["../../data/SPARE/SPARE_vtest1/data/combined_MUSE_raw.csv"]
+#OUT_FILES = ["../../data/SPARE/SPARE_vtest1/sel_vars/combined_MUSE_raw.csv"]
+
+OUT_FILES=["../../data/SPARE/SPARE_vtest1/harmonized/combined_MUSE_raw_test_SPAREOut.csv"]
+
+OUT_FILES=["../../data/SPARE/SPARE_vtest1/sel_sample/AD/combined_MUSE_raw_all_renamed.csv"]
+
+OUT_FILES=["../../data/SPARE/SPARE_vtest1/split_sample/combined_MUSE_raw_train.csv"]
+
+
+print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
 ###################################
 ## Rules
+
 rule ALL:
-    #
-    #input:"../../data/SPARE/sAD/NiChart_DLMUSE_raw_all.csv"
-    #input:"../../data/SPARE/sAD/data/NiChart_DLMUSE_raw_train.csv"
-    #input:"../../data/SPARE/sAge/data/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_train.csv"
-    #input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_pred.csv"
-    #input:"../../data/SPARE/sAge/pred/NiChart_DLMUSE_harmonized_normICV_rprimaryROI_hISTAG_eval.csv"
-    input:expand("../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_harmonized_normICV_r{rtype}_hISTAG_eval.csv", stype = LIST_SPARE, rtype = ['singleROI'])
-    
-    
-#################################    
-## SPARE
-
-rule merge_demog_and_data:
     '''
-    Merge demog and data
+    First rule: lists the final expected out files
+    '''
+    input: OUT_FILES
+
+rule copy_config:
+    '''
+    Rule for copying config files to output dir
     '''
     input:
-        demog="../../data/data_consolidated/NiChart_demog.csv",
-        data="../../data/data_consolidated/NiChart_DLMUSE_{dtype}.csv",
-    params:
-        key_var="MRID"
+        "../../config/{cname}"
     output:
-        "../../data/SPARE/prep/NiChart_DLMUSE+Demog_{dtype}.csv",
+        expand("../../data/{dir_output}/config/{{cname}}", dir_output = config["dir_output"])
+    shell:
+        "cp -v {input} {output}"
+
+rule select_vars:
+    '''
+    Select variables from data
+    '''
+    input:
+        in_csv=expand("../../data/{dir_input}/combined/combined_{{dtype}}.csv", dir_input = config["dir_input"]),
+        dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
+    params:
+        dict_var = 'Code',
+        covars ='MRID,Age,Sex,DLICV',
+    output:
+        "../../data/{dir_output}/sel_vars/combined_{dtype}.csv"
     resources:
         mem_mb=8000
     shell:
-        "echo python utils/util_merge_two.py {input} {params} {output};"
-        "python utils/util_merge_two.py {input} {params} {output}"
+        "python ../../utils/util_select_vars.py {input} {params} {output}"
 
-rule select_spare_sample:
+rule select_SPARE_sample:
     '''
-    Select spare sample
-    - Select samples (from the centiles sample list)
-    - Select variables (a set of input variables + ROI names from list)
+    Select sample (using list)
     '''
     input:
-        sample="../../data/samples/sample_SPARE_{stype}_all.csv",
-        data="../../data/SPARE/prep/NiChart_DLMUSE+Demog_{dtype}.csv",
-        rois="../../config/list_MUSE_{rtype}.csv",
+        sample_csv="../../data/samples/SPARE/sample_SPARE_{stype}_all.csv",
+        data_csv="../../data/{dir_output}/sel_vars/combined_{dtype}.csv",
     params:
-        vars='MRID,Age,Sex',
+        key_var = 'MRID'
     output:
-        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_all.csv"
+        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all.csv"
     resources:
         mem_mb=8000
     shell:
-        "echo python utils/util_select_sample.py {input} {params} {output}; "
-        "python utils/util_select_sample.py {input} {params} {output}"
+        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+
+rule rename_target_var:
+    '''
+    Rename the name of the second var to target
+    '''
+    input:
+        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all.csv"
+    params:
+        num_col = '1',
+        name_col = 'Target'
+    output:
+        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_rename_column.py {input} {params} {output}"
 
 rule split_train_test:
     '''
     Split spare sample all to train test
     '''
     input:
-        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_all.csv"
+        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv"
     params:
         strat_vars = 'Sex,Target',
         test_ratio = '0.4'
     output:
-        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_train.csv",
-        "../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_test.csv"        
+        "../../data/{dir_output}/split_sample/{stype}/combined_{dtype}_train.csv",
+        "../../data/{dir_output}/split_sample/{stype}/combined_{dtype}_test.csv",
     resources:
         mem_mb=8000
     shell:

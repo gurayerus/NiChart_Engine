@@ -5,7 +5,7 @@ import sys
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
 ##localrules: rename_muse_rois
-    
+
 ## Report data
 report: "report/workflow.rst"
 

@@ -1,0 +1,15 @@
+version: SPARE_vtest1
+dir_input: prep_data/prep_data_vtest1
+dir_output: SPARE/SPARE_vtest1
+list_ROIs: list_MUSE_single.csv
+sample_SPARE_train: sample_SPARE_ISTAG_train.csv
+sample_SPARE_test: sample_SPARE_ISTAG_all.csv
+SPARE_types:
+ - Age
+ - AD
+ - Diabetes
+ - Hyperlipidemia
+roi_types:
+ - MUSE
+corr_types:
+ - raw
