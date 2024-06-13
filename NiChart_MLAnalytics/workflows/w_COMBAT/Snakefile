@@ -25,7 +25,7 @@ OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
 OUT_FILES=["../../data/COMBAT/COMBAT_vtest1/harmonized/combined_MUSE_raw_test_COMBATOut.csv"]
 
-OUT_FILES=["../../models/COMBAT/COMBAT_vtest1/combined_MUSE_raw_COMBATModel_pkl.gz"]
+OUT_FILES=["../../models/COMBAT/COMBAT_vtest1/combined_MUSE_raw_COMBATModel.pkl.gz"]
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
