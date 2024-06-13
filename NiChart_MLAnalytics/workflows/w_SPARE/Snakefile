@@ -26,7 +26,7 @@ OUT_FILES=["../../data/SPARE/SPARE_vtest1/sel_sample/AD/combined_MUSE_raw_all_re
 
 OUT_FILES=["../../data/SPARE/SPARE_vtest1/train_test/AD/combined_MUSE_raw_train.csv"]
 
-OUT_FILES=["../../data/SPARE/SPARE_vtest1/pred/combined_MUSE_raw_test_SPARE-AD.csv"]
+OUT_FILES=["../../data/SPARE/SPARE_vtest1/pred/combined_MUSE_raw_test_SPARE-Age.csv"]
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
