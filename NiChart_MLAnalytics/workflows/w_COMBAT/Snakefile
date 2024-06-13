@@ -25,6 +25,8 @@ OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
 OUT_FILES=["../../data/COMBAT/COMBAT_vtest1/harmonized/combined_MUSE_raw_test_COMBATOut.csv"]
 
+OUT_FILES=["../../models/COMBAT/COMBAT_vtest1/combined_MUSE_raw_COMBATModel_pkl.gz"]
+
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
 ###################################
@@ -165,30 +167,17 @@ rule select_output_vars:
         "python ../../utils/util_select_vars.py {input} {params} {output}"
 
 
-#rule copy_COMBAT_model:
-    #'''
-    #Copy COMBAT model to models
-    #'''        
-    #input:
-        #"../../data/COMBAT/h{hdata}/COMBATModel_combined_DLMUSE_{dtype}_r{rtype}.pkl.gz"
-    #output:
-        #"../../models/COMBAT/COMBATModel_combined_DLMUSE_{dtype}_r{rtype}_h{hdata}.pkl.gz"
-    #resources:
-        #mem_mb=8000
-    #shell:
-        #"cp {input} {output}"
-
-#rule copy_harmonized_data:
-    #'''
-    #Copy harmonized data
-    #'''        
-    #input:
-        #"../../data/COMBAT/h{hdata}/combined_DLMUSE_{dtype}_r{rtype}_all_COMBATOut_nosuffix_rois.csv"
-    #output:
-        #"../../data/data_consolidated/combined_DLMUSE_harmonized_{dtype}_r{rtype}_h{hdata}.csv"
-    #resources:
-        #mem_mb=8000
-    #shell:
-        #"cp {input} {output}"
+rule copy_COMBAT_model:
+    '''
+    Copy COMBAT model to models
+    '''
+    input:
+        "../../data/{dir_output}/model/combined_{dtype}_COMBATModel.pkl.gz",
+    output:
+        "../../models/{dir_output}/combined_{dtype}_COMBATModel.pkl.gz"
+    resources:
+        mem_mb=8000
+    shell:
+        "cp {input} {output}"
 
 
