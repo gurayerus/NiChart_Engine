@@ -28,6 +28,8 @@ OUT_FILES=["../../data/SPARE/SPARE_vtest1/train_test/AD/combined_MUSE_raw_train.
 
 OUT_FILES=["../../data/SPARE/SPARE_vtest1/pred/combined_MUSE_raw_test_SPARE-Age.csv"]
 
+OUT_FILES=["../../models/SPARE/SPARE_vtest1/combined_MUSE_raw_SPARE-AD_model.pkl.gz"]
+
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
 ###################################
@@ -145,6 +147,19 @@ rule sparesvm_test:
         mem_mb=16000
     shell:
         "bash ../../utils/util_spare_test.sh {input} {output}"
+
+rule copy_SPARE_model:
+    '''
+    Copy SPARE model to models
+    '''
+    input:
+        "../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
+    output:
+        "../../models/{dir_output}/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
+    resources:
+        mem_mb=8000
+    shell:
+        "cp {input} {output}"
 
 #rule sparesvm_eval:
     #'''
