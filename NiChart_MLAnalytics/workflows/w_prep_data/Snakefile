@@ -8,7 +8,7 @@ localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_dat
 #report: "report/workflow.rst"
 
 ## Config file
-configfile: "../../config/config_prep_data.yaml"
+configfile: "../../config/config_vDemo_prep_data.yaml"
 
 ## Read study list from config
 df = pd.read_csv("../../config/" + config["list_studies_merge"])
@@ -17,9 +17,9 @@ LIST_STUDIES = df.Study.tolist()
 ###################################
 ## Out file names
 
-OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = ["config_prep_data.yaml",  config["list_covars"], config["list_ROIs"], config["list_studies_merge"]], dir_output = config["dir_output"])
+OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"],  config["list_covars"], config["list_ROIs"], config["list_studies_merge"]], dir_output = config["dir_output"])
 
-OUT_RESULTS = expand("../../data/{dir_output}/combined/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+OUT_RESULTS = expand("../../data/{dir_output}/final/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
@@ -237,3 +237,16 @@ rule merge_covars_to_corr_rois:
         mem_mb=8000
     shell:
         "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+
+rule drop_na:
+    '''
+    Drop NAs in final data
+    '''
+    input:
+        "../../data/{dir_output}/combined/combined_{dtype}_{ctype}.csv"
+    output:
+        "../../data/{dir_output}/final/combined_{dtype}_{ctype}.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_drop_na.py {input} {output}"

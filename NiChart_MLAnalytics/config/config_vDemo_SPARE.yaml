@@ -1,0 +1,10 @@
+version: vDemo
+dir_input: vDemo/prep_data
+dir_output: vDemo/SPARE
+list_ROIs: lists/MUSE/list_MUSE_primary.csv
+sample_SPARE_AD: lists/samples/SPARE/sample_SPARE_AD_all.csv
+sample_SPARE_Age: lists/samples/SPARE/sample_SPARE_AD_Age.csv
+roi_types:
+ - MUSE
+corr_types:
+ - raw

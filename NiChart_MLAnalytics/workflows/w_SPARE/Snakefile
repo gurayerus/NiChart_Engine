@@ -3,32 +3,36 @@ import pandas as pd
 import os
 import sys
 
-## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-localrules: select_sample_spare, merge_rois, copy_model, split_train_test
+### Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
+#localrules: select_sample_spare, merge_rois, copy_model, split_train_test
 
 ## Config file
-configfile: "../../config/config_SPARE.yaml"
+configfile: "../../config/config_vDemo_SPARE.yaml"
 
 ###################################
 ## Out file names
 
-OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = ["config_SPARE.yaml", config["sample_SPARE_train"], config["sample_SPARE_test"], config["list_ROIs"]], dir_output = config["dir_output"])
+#OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = ["config_SPARE.yaml", config["sample_SPARE_train"], config["sample_SPARE_test"], config["list_ROIs"]], dir_output = config["dir_output"])
 
-OUT_RESULTS = expand("../../data/{dir_output}/data/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+#OUT_RESULTS = expand("../../data/{dir_output}/data/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
-OUT_FILES = OUT_CONFIG + OUT_RESULTS
-#OUT_FILES = ["../../data/SPARE/SPARE_vtest1/data/combined_MUSE_raw.csv"]
-#OUT_FILES = ["../../data/SPARE/SPARE_vtest1/sel_vars/combined_MUSE_raw.csv"]
+#OUT_FILES = OUT_CONFIG + OUT_RESULTS
+#OUT_FILES = ["../../data/vDemo/SPARE/data/combined_MUSE_raw.csv"]
+#OUT_FILES = ["../../data/vDemo/SPARE/sel_vars/combined_MUSE_raw.csv"]
 
-OUT_FILES=["../../data/SPARE/SPARE_vtest1/harmonized/combined_MUSE_raw_test_SPAREOut.csv"]
+OUT_FILES=["../../data/vDemo/SPARE/harmonized/combined_MUSE_raw_test_SPAREOut.csv"]
 
-OUT_FILES=["../../data/SPARE/SPARE_vtest1/sel_sample/AD/combined_MUSE_raw_all_renamed.csv"]
+OUT_FILES=["../../data/vDemo/SPARE/sel_sample/AD/combined_MUSE_raw_all_renamed.csv"]
 
-OUT_FILES=["../../data/SPARE/SPARE_vtest1/train_test/AD/combined_MUSE_raw_train.csv"]
+OUT_FILES=["../../data/vDemo/SPARE/train_test/AD/combined_MUSE_raw_train.csv"]
 
-OUT_FILES=["../../data/SPARE/SPARE_vtest1/pred/combined_MUSE_raw_test_SPARE-Age.csv"]
+OUT_FILES=["../../data/vDemo/SPARE/pred/combined_MUSE_raw_test_SPARE-Age.csv"]
 
-OUT_FILES=["../../models/SPARE/SPARE_vtest1/combined_MUSE_raw_SPARE-AD_model.pkl.gz"]
+OUT_FILES=["../../models/vDemo/SPARE/combined_MUSE_raw_SPARE-AD_model.pkl.gz"]
+
+OUT_FILES=["../../data/vDemo/SPARE/train_test/AD/combined_MUSE_raw_train.csv"]
+
+OUT_FILES=["../../data/vDemo/SPARE/model/combined_MUSE_raw_SPARE-AD_model.pkl.gz"]
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
@@ -57,7 +61,7 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv=expand("../../data/{dir_input}/combined/combined_{{dtype}}.csv", dir_input = config["dir_input"]),
+        in_csv=expand("../../data/{dir_input}/final/combined_{{dtype}}.csv", dir_input = config["dir_input"]),
         dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
@@ -69,13 +73,17 @@ rule select_vars:
     shell:
         "python ../../utils/util_select_vars.py {input} {params} {output}"
 
+def get_spare_sample(wildcards):
+    path_spare='../../config/' + config["sample_SPARE_" + wildcards.stype]
+    return path_spare
+
 rule select_SPARE_sample:
     '''
     Select sample (using list)
     '''
     input:
-        sample_csv="../../data/samples/SPARE/sample_SPARE_{stype}_all.csv",
-        data_csv="../../data/{dir_output}/sel_vars/combined_{dtype}.csv",
+        sample=get_spare_sample,
+        data="../../data/{dir_output}/sel_vars/combined_{dtype}.csv",
     params:
         key_var = 'MRID'
     output:
@@ -148,18 +156,18 @@ rule sparesvm_test:
     shell:
         "bash ../../utils/util_spare_test.sh {input} {output}"
 
-rule copy_SPARE_model:
-    '''
-    Copy SPARE model to models
-    '''
-    input:
-        "../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
-    output:
-        "../../models/{dir_output}/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
-    resources:
-        mem_mb=8000
-    shell:
-        "cp {input} {output}"
+#rule copy_SPARE_model:
+    #'''
+    #Copy SPARE model to models
+    #'''
+    #input:
+        #"../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
+    #output:
+        #"../../models/{dir_output}/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
+    #resources:
+        #mem_mb=8000
+    #shell:
+        #"cp {input} {output}"
 
 #rule sparesvm_eval:
     #'''
