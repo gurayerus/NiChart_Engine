@@ -54,7 +54,7 @@ rule select_vars:
         dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
-        covars ='MRID,Age,Sex,SITE,DLICV',
+        covars ='MRID,Age,Sex,SITE,MUSE_702',
     output:
         "../../data/{dir_output}/sel_vars/combined_{dtype}.csv"
     resources:
