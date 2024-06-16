@@ -54,7 +54,7 @@ rule select_vars:
         dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
-        covars ='MRID,Age,Sex,SITE,MUSE_702',
+        covars ='MRID,Age,Sex,SITE,DLICV',
     output:
         "../../data/{dir_output}/sel_vars/combined_{dtype}.csv"
     resources:
@@ -141,7 +141,6 @@ rule remove_COMBAT_suffix:
     output:
         "../../data/{dir_output}/harmonized/combined_{dtype}_test_COMBATOut_nosuffix.csv"
     resources:
-        mem_mb=8000
     shell:
         "python ../../utils/util_remove_suffix.py {input} {params} {output}; "
         
