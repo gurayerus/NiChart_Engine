@@ -22,7 +22,7 @@ OUT_FILES=expand("../../data/{dir_output}/model/combined_{dtype}_{ctype}_SPARE-{
 
 OUT_FILES=expand("../../models/{dir_output}/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
 
-#OUT_FILES=expand("../../{dir_output}/spare_scores/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
+OUT_FILES=expand("../../{dir_output}/spare_scores/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
@@ -153,7 +153,7 @@ rule sparesvm_test:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
         mdl="../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
     output:
-        pred="../../data/{dir_output}/spare_scores/combined_{dtype}_SPARE-{stype}.csv"
+        "../../data/{dir_output}/spare_scores/combined_{dtype}_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:
@@ -167,7 +167,7 @@ rule eval_SPARE_scores:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
         pred="../../data/{dir_output}/spare_scores/combined_{dtype}_test_SPARE-{stype}.csv"
     output:
-        "../../data/{dir_output}/spare_scores/combined_{dtype}_test_SPARE-{stype}_eval.csv",
+        "../../data/{dir_output}/spare_scores/combined_{dtype}_SPARE-{stype}_eval.csv",
     resources:
         mem_mb=8000
     shell:
