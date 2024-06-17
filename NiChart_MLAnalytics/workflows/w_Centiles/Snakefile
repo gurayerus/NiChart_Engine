@@ -1,17 +1,46 @@
-
-configfile: "../../config/config.yaml"
-
-## Read lists
+## Import packages
 import pandas as pd
 
-df = pd.read_csv(config["list_studies"])
-LIST_STUDIES = df.Study.tolist()
+## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
+localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_data, rename_rois_subsampled, merge_data_subsampled, concat_studies, select_covars, select_roi_vars, merge_covars_to_rois, correct_icv, merge_covars_to_corr_rois
+    
+### Report data
+#report: "report/workflow.rst"
 
-df = pd.read_csv(config["list_rois_primary"])
-LIST_ROIS = df.Index.tolist()
+## Config file
+configfile: "../../config/config_vDemo_Centiles.yaml"
 
 ###################################
-## Function definitions
+## Out file names
+
+OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"],  config["list_covars"], config["list_ROIs"], config["list_studies_merge"]], dir_output = config["dir_output"])
+
+OUT_RESULTS = expand("../../data/{dir_output}/final/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+
+OUT_FILES = OUT_CONFIG + OUT_RESULTS
+
+print("Target out files:" + '\n' + '\n'.join(OUT_FILES) + '\n')
+
+###################################
+## Rules
+
+rule ALL:
+    '''
+    First rule: lists the final expected out files
+    '''
+    input: OUT_FILES
+
+rule copy_config:
+    '''
+    Rule for copying config files to output dir
+    '''
+    input:
+        "../../config/{cname}"
+    output:
+        expand("../../data/{dir_output}/config/{{cname}}", dir_output = config["dir_output"])
+    shell:
+        "cp -v {input} {output}"
+    
 def get_centile_files(wildcards):
     '''
     Returns a list of centile csv files for all rois for a specific study
@@ -28,28 +57,23 @@ def get_centile_files_from_file(wildcards):
     cent_files = ['../../data/centiles/c_' + wildcards.ctype + '/centiles_single/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_CURR_ROIS]
     return cent_files
 
-OUT_ROI_TYPES = ['raw', 'normICV']
-OUT_MDL_TYPES = ['raw_singleROI_combatAgeSexICV', 
-                 'raw_compositeROI_combatAgeSexICV', 
-                 'normICV_singleROI_combatAgeSex', 
-                 'normICV_compositeROI_combatAgeSex', 
-                 'normICV_singleROI_combatAgeSexICV', 
-                 'normICV_compositeROI_combatAgeSexICV']
-OUT_MDL_TYPES = ['raw_singleROI_combatAgeSexICV', 
-                 'normICV_singleROI_combatAgeSex']
-OUT_SUFF =  OUT_ROI_TYPES + OUT_MDL_TYPES
+rule select_vars:
+    '''
+    Select variables from data
+    '''
+    input:
+        in_csv=expand("../../data/{dir_input}/final/combined_{{dtype}}.csv", dir_input = config["dir_input"]), 
+        dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
+    params:
+        dict_var = 'Code',
+        covars ='MRID,Age,Sex,SITE,DLICV',
+    output:
+        "../../data/{dir_output}/sel_vars/combined_{dtype}.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_select_vars.py {input} {params} {output}"
 
-
-
-###################################
-## Rules
-rule ALL:
-    #input:"../../data/centiles/NiChartData_MRIDAgeDLMUSERaw_cSampleBlsaShip_primaryROI_varGM.csv"
-    #input:"../../data/centiles/c_BLSA-SHIP/data_selrois/NiChartData_raw.csv"
-    #input:"../../data/centiles/c_BLSA-SHIP/centiles_per_roi/NiChartData_raw_varGM.csv"
-    #input:"../../data/centiles/c_BLSA-SHIP/data_selrois/NiChartData_raw.csv"
-    #input:expand("../../data/centiles/c_BLSA-SHIP/data_selrois/NiChartData_{dtype}.csv", dtype = OUT_SUFF)
-    input:expand("../../data/centiles/c_BLSA-SHIP/centiles_combined/NiChartData_{dtype}_centiles.csv", dtype = OUT_SUFF)
 
 rule select_sample_centile:
     '''
