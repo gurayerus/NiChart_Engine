@@ -6,8 +6,6 @@
 source activate /cbica/home/erusg/.conda/envs/snakemake-tutorial
 # source activate /cbica/home/erusg/.conda/envs/spare
 
-cd /cbica/home/erusg/GitHub/NiChart/NiChart_Workflows/NiChart_Engine/NiChart_MLAnalytics/workflows/w_spare
-
 # snakemake --cores=1 --executor slurm --default-resources slurm_account=davatzic --jobs 1 
 snakemake --cores=1 --executor slurm --default-resources slurm_account=davatzic --jobs 10 
 

@@ -3,8 +3,8 @@ import pandas as pd
 import os
 import sys
 
-### Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-#localrules: select_sample_spare, merge_rois, copy_model, split_train_test
+## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
+localrules: select_vars, select_SPARE_sample, rename_target_var, split_train_test, copy_SPARE_model
 
 ## Config file
 configfile: "../../config/config_vDemo_SPARE.yaml"
@@ -17,22 +17,10 @@ configfile: "../../config/config_vDemo_SPARE.yaml"
 #OUT_RESULTS = expand("../../data/{dir_output}/data/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
 #OUT_FILES = OUT_CONFIG + OUT_RESULTS
-#OUT_FILES = ["../../data/vDemo/SPARE/data/combined_MUSE_raw.csv"]
-#OUT_FILES = ["../../data/vDemo/SPARE/sel_vars/combined_MUSE_raw.csv"]
 
-OUT_FILES=["../../data/vDemo/SPARE/harmonized/combined_MUSE_raw_test_SPAREOut.csv"]
+OUT_FILES=expand("../../data/{dir_output}/model/combined_{dtype}_{ctype}_SPARE-{stype}_model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
 
-OUT_FILES=["../../data/vDemo/SPARE/sel_sample/AD/combined_MUSE_raw_all_renamed.csv"]
-
-OUT_FILES=["../../data/vDemo/SPARE/train_test/AD/combined_MUSE_raw_train.csv"]
-
-OUT_FILES=["../../data/vDemo/SPARE/pred/combined_MUSE_raw_test_SPARE-Age.csv"]
-
-OUT_FILES=["../../models/vDemo/SPARE/combined_MUSE_raw_SPARE-AD_model.pkl.gz"]
-
-OUT_FILES=["../../data/vDemo/SPARE/train_test/AD/combined_MUSE_raw_train.csv"]
-
-OUT_FILES=["../../data/vDemo/SPARE/model/combined_MUSE_raw_SPARE-AD_model.pkl.gz"]
+OUT_FILES=expand("../../models/{dir_output}/combined_{dtype}_{ctype}_SPARE-{stype}_model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
@@ -142,6 +130,19 @@ rule sparesvm_train:
     shell:
         "bash ../../utils/util_spare_train.sh {input} {params} {output}"
         
+rule copy_SPARE_model:
+    '''
+    Copy SPARE model to models
+    '''
+    input:
+        "../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
+    output:
+        "../../models/{dir_output}/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
+    resources:
+        mem_mb=8000
+    shell:
+        "cp {input} {output}"
+
 rule sparesvm_test:
     '''
     Test SPARE model using the split test sample
@@ -150,58 +151,35 @@ rule sparesvm_test:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
         mdl="../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
     output:
-        csv="../../data/{dir_output}/pred/combined_{dtype}_test_SPARE-{stype}.csv"
+        pred="../../data/{dir_output}/pred/combined_{dtype}_test_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:
         "bash ../../utils/util_spare_test.sh {input} {output}"
 
-#rule copy_SPARE_model:
-    #'''
-    #Copy SPARE model to models
-    #'''
-    #input:
-        #"../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
-    #output:
-        #"../../models/{dir_output}/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
-    #resources:
-        #mem_mb=8000
-    #shell:
-        #"cp {input} {output}"
-
-#rule sparesvm_eval:
-    #'''
-    #Evaluate accuracy on test sample
-    #'''
-    #input:
-        #data="../../data/SPARE/s{stype}/r{rtype}/data/NiChart_DLMUSE_{dtype}_test.csv",
-        #pred="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_pred.csv"
-    #output:
-        #csv="../../data/SPARE/s{stype}/r{rtype}/pred/NiChart_DLMUSE_{dtype}_eval.csv"
-    #resources:
-        #mem_mb=8000
-    #shell:
-        #"python utils/util_eval_spare.py {input} {wildcards.stype} {output}"
-
-#rule copy_model:
-    #'''
-    #Copy model to models folder
-    #'''
-    #input:
-        #"../../data/SPARE/s_{stype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
-    #output:
-        #"../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz"
-    #shell:
-        #"cp {input} {output}"
-        
-#rule copy_spare_scores:
-    #'''
-    #Copy model to models folder
-    #'''
-    #input:
-        #"../../data/SPARE/s_{stype}/models/NiChart_DLMUSE_{dtype}_model.pkl.gz"
-    #output:
-        #"../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz"
-    #shell:
-        #"cp {input} {output}"
+rule eval_SPARE_scores:
+    '''
+    Evaluate accuracy on test sample
+    '''
+    input:
+        data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
+        pred="../../data/{dir_output}/pred/combined_{dtype}_test_SPARE-{stype}.csv"
+    output:
+        data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test_SPARE-{stype}.csv",
+    resources:
+        mem_mb=8000
+    shell:
+        "python utils/util_eval_spare.py {input} {wildcards.stype} {output}"
+      
+rule copy_SPARE_scores:
+    '''
+    Copy model to models folder
+    '''
+    input:
+        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test_SPARE-{stype}.csv",
+    output:
+        "../../models/{dir_output}/{stype}/combined_{dtype}_test_SPARE-{stype}.csv"
+        "../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz"
+    shell:
+        "cp {input} {output}"
 

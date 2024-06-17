@@ -4,7 +4,7 @@ import os
 import sys
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-##localrules: rename_muse_rois
+localrules: copy_config, select_vars, select_COMBAT_sample_train, select_COMBAT_sample_test, copy_COMBAT_model, remove_COMBAT_suffix, select_output_vars, 
 
 ## Report data
 report: "report/workflow.rst"
@@ -17,13 +17,16 @@ configfile: "../../config/config_vDemo_COMBAT.yaml"
 
 OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"], config["sample_COMBAT_train"], config["sample_COMBAT_test"], config["list_ROIs"]], dir_output = config["dir_output"])
 
-OUT_RESULTS = expand("../../data/{dir_output}/data/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+#OUT_RESULTS = expand("../../data/{dir_output}/model/combined_{dtype}_{ctype}_COMBATModel.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
 OUT_RESULTS = expand("../../models/{dir_output}/combined_{dtype}_{ctype}_COMBATModel.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
+#OUT_FILES=["../../data/COMBAT/vDemo/harmonized/combined_MUSE_raw_test_COMBATOut.csv"]
+
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
+#input()
 
 ###################################
 ## Rules
@@ -50,7 +53,7 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv=expand("../../data/{dir_input}/final/combined_{{dtype}}.csv", dir_input = config["dir_input"]), 
+        in_csv=expand("../../data/{dir_input}/combined/combined_{{dtype}}.csv", dir_input = config["dir_input"]), 
         dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
@@ -83,7 +86,7 @@ rule select_COMBAT_sample_test:
     Select sample (using list)
     '''
     input:
-        sample_csv=expand("../../data/samples/COMBAT/{sample}", sample = config["sample_COMBAT_test"]),
+        sample_csv=expand("../../config/{sample}", sample = config["sample_COMBAT_test"]),
         data_csv=expand("../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv", dir_output = config["dir_output"]),
     params:
         key_var = 'MRID'
@@ -114,6 +117,19 @@ rule COMBAT_train:
     shell:
         "bash ../../utils/util_combat_train.sh {input} {params} {output}"
 
+rule copy_COMBAT_model:
+    '''
+    Copy COMBAT model to models
+    '''
+    input:
+        "../../data/{dir_output}/model/combined_{dtype}_COMBATModel.pkl.gz",
+    output:
+        "../../models/{dir_output}/combined_{dtype}_COMBATModel.pkl.gz"
+    resources:
+        mem_mb=8000
+    shell:
+        "cp {input} {output}"
+
 rule COMBAT_apply:
     '''
     Apply COMBAT model to calculate harmonized values
@@ -141,6 +157,7 @@ rule remove_COMBAT_suffix:
     output:
         "../../data/{dir_output}/harmonized/combined_{dtype}_test_COMBATOut_nosuffix.csv"
     resources:
+        mem_mb=8000
     shell:
         "python ../../utils/util_remove_suffix.py {input} {params} {output}; "
         
@@ -160,19 +177,3 @@ rule select_output_vars:
         mem_mb=8000
     shell:
         "python ../../utils/util_select_vars.py {input} {params} {output}"
-
-
-rule copy_COMBAT_model:
-    '''
-    Copy COMBAT model to models
-    '''
-    input:
-        "../../data/{dir_output}/model/combined_{dtype}_COMBATModel.pkl.gz",
-    output:
-        "../../models/{dir_output}/combined_{dtype}_COMBATModel.pkl.gz"
-    resources:
-        mem_mb=8000
-    shell:
-        "cp {input} {output}"
-
-
