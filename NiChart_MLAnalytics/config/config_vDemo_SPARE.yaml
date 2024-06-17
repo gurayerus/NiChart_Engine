@@ -1,5 +1,5 @@
 version: vDemo
-dir_input: vDemo/prep_data
+dir_input: vDemo/COMBAT/harmonized
 dir_output: vDemo/SPARE
 #list_ROIs: lists/MUSE/list_MUSE_primary.csv
 list_ROIs: lists/MUSE/list_MUSE_single.csv

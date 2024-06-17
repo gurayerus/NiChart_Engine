@@ -19,7 +19,9 @@ OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["c
 
 #OUT_RESULTS = expand("../../data/{dir_output}/model/combined_{dtype}_{ctype}_COMBATModel.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
-OUT_RESULTS = expand("../../models/{dir_output}/combined_{dtype}_{ctype}_COMBATModel.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+#OUT_RESULTS = expand("../../models/{dir_output}/combined_{dtype}_{ctype}_COMBATModel.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+
+OUT_RESULTS = expand("../../data/{dir_output}/harmonized/combined_{dtype}_{ctype}_test_COMBATOut.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
@@ -53,7 +55,7 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv=expand("../../data/{dir_input}/combined/combined_{{dtype}}.csv", dir_input = config["dir_input"]), 
+        in_csv=expand("../../data/{dir_input}/final/combined_{{dtype}}.csv", dir_input = config["dir_input"]), 
         dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
@@ -170,7 +172,7 @@ rule select_output_vars:
         dict=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
-        covars='MRID,ICV'
+        covars='MRID,Age,Sex,SITE,DLICV'
     output:
         csv="../../data/{dir_output}/harmonized/combined_{dtype}_test_COMBATOut.csv"
     resources:

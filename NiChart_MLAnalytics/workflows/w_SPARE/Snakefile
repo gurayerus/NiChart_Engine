@@ -49,7 +49,7 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv=expand("../../data/{dir_input}/final/combined_{{dtype}}.csv", dir_input = config["dir_input"]),
+        in_csv=expand("../../data/{dir_input}/combined_{{dtype}}.csv", dir_input = config["dir_input"]),
         dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
@@ -151,7 +151,7 @@ rule sparesvm_test:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
         mdl="../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
     output:
-        pred="../../data/{dir_output}/pred/combined_{dtype}_test_SPARE-{stype}.csv"
+        pred="../../data/{dir_output}/spare_scores/combined_{dtype}_test_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:
@@ -163,23 +163,11 @@ rule eval_SPARE_scores:
     '''
     input:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
-        pred="../../data/{dir_output}/pred/combined_{dtype}_test_SPARE-{stype}.csv"
+        pred="../../data/{dir_output}/spare_scores/combined_{dtype}_test_SPARE-{stype}.csv"
     output:
-        data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test_SPARE-{stype}.csv",
+        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test_SPARE-{stype}.csv",
     resources:
         mem_mb=8000
     shell:
         "python utils/util_eval_spare.py {input} {wildcards.stype} {output}"
-      
-rule copy_SPARE_scores:
-    '''
-    Copy model to models folder
-    '''
-    input:
-        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test_SPARE-{stype}.csv",
-    output:
-        "../../models/{dir_output}/{stype}/combined_{dtype}_test_SPARE-{stype}.csv"
-        "../../models/SPARE/SPARE_{stype}_NiChart_DLMUSE_{dtype}_model.pkl.gz"
-    shell:
-        "cp {input} {output}"
 
