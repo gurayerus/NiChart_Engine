@@ -4,7 +4,7 @@ import os
 import sys
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-localrules: select_vars, select_SPARE_sample, rename_target_var, split_train_test, copy_SPARE_model
+localrules: copy_config, select_vars, select_SPARE_sample, rename_target_var, split_train_test, copy_SPARE_model, eval_SPARE_scores
 
 ## Config file
 configfile: "../../config/config_vDemo_SPARE.yaml"
@@ -20,7 +20,9 @@ configfile: "../../config/config_vDemo_SPARE.yaml"
 
 OUT_FILES=expand("../../data/{dir_output}/model/combined_{dtype}_{ctype}_SPARE-{stype}_model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
 
-OUT_FILES=expand("../../models/{dir_output}/combined_{dtype}_{ctype}_SPARE-{stype}_model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
+OUT_FILES=expand("../../models/{dir_output}/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
+
+#OUT_FILES=expand("../../{dir_output}/spare_scores/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
@@ -151,7 +153,7 @@ rule sparesvm_test:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
         mdl="../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
     output:
-        pred="../../data/{dir_output}/spare_scores/combined_{dtype}_test_SPARE-{stype}.csv"
+        pred="../../data/{dir_output}/spare_scores/combined_{dtype}_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:
@@ -165,7 +167,7 @@ rule eval_SPARE_scores:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
         pred="../../data/{dir_output}/spare_scores/combined_{dtype}_test_SPARE-{stype}.csv"
     output:
-        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test_SPARE-{stype}.csv",
+        "../../data/{dir_output}/spare_scores/combined_{dtype}_test_SPARE-{stype}_eval.csv",
     resources:
         mem_mb=8000
     shell:

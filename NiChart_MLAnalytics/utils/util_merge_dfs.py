@@ -10,7 +10,10 @@ def merge_data(in_csv1, in_csv2, key_var, out_csv):
     df1 = pd.read_csv(in_csv1, dtype = {'MRID':str})
     df2 = pd.read_csv(in_csv2, dtype = {'MRID':str})
     
-    df_out = df1.merge(df2, on = key_var)
+    df_out = df1.merge(df2, on = key_var, suffixes = ['', '_tmpremovedupl'])
+    
+    # Remove duplicate columns
+    df_out = df_out[df_out.columns[df_out.columns.str.contains('_tmpremovedupl')==False]]
 
     # Write out file
     df_out.to_csv(out_csv, index=False)
