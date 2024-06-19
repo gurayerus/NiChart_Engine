@@ -50,6 +50,22 @@ rule copy_config:
     shell:
         "cp -v {input} {output}"
 
+rule merge_data:
+    '''
+    Merge demog data to ROIs
+    '''
+    input:
+        demog=expand("../../data/{dir_input}/{{study}}_DemogClin.csv", dir_input = config["dir_input"]),
+        roi="../../data/{dir_output}/renamed/{study}_{dtype}.csv"
+    params:
+        key_var = 'MRID'
+    output:
+        temp("../../data/{dir_output}/merged/{study}_{dtype}.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+
 rule select_vars:
     '''
     Select variables from data

@@ -2,7 +2,7 @@
 import pandas as pd
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_data, rename_rois_subsampled, merge_data_subsampled, concat_studies, select_covars, select_roi_vars, merge_covars_to_rois, correct_icv, merge_covars_to_corr_rois
+localrules: copy_config, select_vars, select_sample_centile, merge_rois, select_rois
     
 ### Report data
 #report: "report/workflow.rst"
@@ -18,6 +18,8 @@ OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["c
 OUT_RESULTS = expand("../../data/{dir_output}/final/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
+
+OUT_FILES = 
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES) + '\n')
 
@@ -41,22 +43,6 @@ rule copy_config:
     shell:
         "cp -v {input} {output}"
     
-def get_centile_files(wildcards):
-    '''
-    Returns a list of centile csv files for all rois for a specific study
-    '''
-    cent_files = ['../../data/centiles/' + wildcards.ctype + '/centiles_per_roi/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_ROIS]
-    return cent_files
-
-def get_centile_files_from_file(wildcards):
-    '''
-    Returns a list of centile csv files for all rois for a specific study
-    '''
-    list_in = '../../data/centiles/c_' + wildcards.ctype + '/data_selrois/NiChartData_' + wildcards.dtype + '.csv'
-    LIST_CURR_ROIS = pd.read_csv(list_in).columns[2:]
-    cent_files = ['../../data/centiles/c_' + wildcards.ctype + '/centiles_single/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_CURR_ROIS]
-    return cent_files
-
 rule select_vars:
     '''
     Select variables from data
@@ -132,6 +118,22 @@ rule calc_centiles_single_var:
         "-t {wildcards.var} -c {params.cent_vals} -b {params.bin_size} -v; "
         "Rscript ./utils/util_calc_centiles.r -i {input} -o {output} "
         "-t {wildcards.var} -c {params.cent_vals} -b {params.bin_size} -v"
+
+def get_centile_files(wildcards):
+    '''
+    Returns a list of centile csv files for all rois for a specific study
+    '''
+    cent_files = ['../../data/centiles/' + wildcards.ctype + '/centiles_per_roi/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_ROIS]
+    return cent_files
+
+def get_centile_files_from_file(wildcards):
+    '''
+    Returns a list of centile csv files for all rois for a specific study
+    '''
+    list_in = '../../data/centiles/c_' + wildcards.ctype + '/data_selrois/NiChartData_' + wildcards.dtype + '.csv'
+    LIST_CURR_ROIS = pd.read_csv(list_in).columns[2:]
+    cent_files = ['../../data/centiles/c_' + wildcards.ctype + '/centiles_single/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_CURR_ROIS]
+    return cent_files
 
 rule combine_centiles:
     input:

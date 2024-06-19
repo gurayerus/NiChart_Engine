@@ -2,7 +2,7 @@ import pandas as pd
 import sys
 import os
 
-def subsample_data(in_csv, num_sample, out_vars, out_csv):
+def subsample_data(in_csv, num_sample, random_state, out_vars, out_csv):
     """
     Select a subsample of the data.
     """
@@ -12,7 +12,7 @@ def subsample_data(in_csv, num_sample, out_vars, out_csv):
     
     ## Select sample
     if num_sample <= df.shape[0]:
-        df_out = df.sample(num_sample)
+        df_out = df.sample(n = num_sample, random_state = random_state)
     else:
         df_out = df
     
@@ -32,13 +32,14 @@ if __name__ == "__main__":
 
     in_csv = sys.argv[1]
     num_sample = int(sys.argv[2])
-    out_vars = sys.argv[3]
-    out_csv = sys.argv[4]
+    random_state = int(sys.argv[3])
+    out_vars = sys.argv[4]
+    out_csv = sys.argv[5]
     
     # Print run command
     print('About to run: ' + ' '.join(sys.argv))
 
     # Call the function
-    subsample_data(in_csv, num_sample, out_vars, out_csv)
+    subsample_data(in_csv, num_sample, random_state, out_vars, out_csv)
 
     print("Sample selection complete! Output file:", out_csv)

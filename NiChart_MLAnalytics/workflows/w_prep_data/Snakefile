@@ -8,7 +8,7 @@ localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_dat
 #report: "report/workflow.rst"
 
 ## Config file
-configfile: "../../config/config_vDemo_prep_data.yaml"
+configfile: "../../config/config_vISTAG_prep_data.yaml"
 
 ## Read study list from config
 df = pd.read_csv("../../config/" + config["list_studies_merge"])
@@ -19,7 +19,7 @@ LIST_STUDIES = df.Study.tolist()
 
 OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"],  config["list_covars"], config["list_ROIs"], config["list_studies_merge"]], dir_output = config["dir_output"])
 
-OUT_RESULTS = expand("../../data/{dir_output}/final/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+OUT_RESULTS = expand("../../data/{dir_output}/final/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = ['covars'] + config["corr_types"], dir_output = config["dir_output"])
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
 
@@ -54,6 +54,7 @@ rule make_sample_list:
     output:
         "../../data/{dir_output}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
     params:
+        random_state = '42',
         out_vars = 'MRID',
     shell:
         "python ../../utils/util_subsample_df.py {input} {wildcards.num_sample} {params} {output}"
@@ -153,18 +154,34 @@ rule concat_studies:
     shell:
         "python ../../utils/util_concat_dfs.py {output} {input}"
 
+rule qc_ROIs:
+    '''
+    Discard QC fail cases based on distributions
+    '''
+    input:
+        "../../data/{dir_output}/combined/combined_{dtype}.csv"
+    output:
+        temp("../../data/{dir_output}/qced/combined_{dtype}.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_qc_ROIs.py {input} {output}"
+
+
+ruleorder: select_covars > correct_icv
+
 rule select_covars:
     '''
     Select variables from data
     '''
     input:
-        in_csv="../../data/{dir_output}/combined/combined_{dtype}.csv",
+        in_csv="../../data/{dir_output}/qced/combined_{dtype}.csv",
         dict_csv=expand("../../config/{covars}", covars = config["list_covars"])        
     params:
         dict_var = 'Name',
         vars_list = 'MRID',
     output:
-        temp("../../data/{dir_output}/covars/combined_{dtype}_covars.csv")
+        temp("../../data/{dir_output}/split_tables/combined_{dtype}_covars.csv")
     resources:
         mem_mb=8000
     shell:
@@ -175,77 +192,43 @@ rule select_roi_vars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/{dir_output}/combined/combined_{dtype}.csv",
+        in_csv="../../data/{dir_output}/qced/combined_{dtype}.csv",
         dict=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
         vars_list = 'MRID',
     output:
-        temp("../../data/{dir_output}/rois/combined_{dtype}_rois.csv")
+        temp("../../data/{dir_output}/split_tables/combined_{dtype}_initROIs.csv")
     resources:
         mem_mb=8000
     shell:
         "python ../../utils/util_select_vars.py {input} {params} {output}"
-
-ruleorder: merge_covars_to_rois > merge_covars_to_corr_rois
-    
-rule merge_covars_to_rois:
-    '''
-    Merge covars to ROIs
-    '''
-    input:
-        covar="../../data/{dir_output}/covars/combined_{dtype}_covars.csv",
-        roi="../../data/{dir_output}/rois/combined_{dtype}_rois.csv"
-    params:
-        key_var = 'MRID'
-    output:
-        "../../data/{dir_output}/combined/combined_{dtype}_raw.csv"
-    resources:
-        mem_mb=8000
-    shell:
-        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
 
 rule correct_icv:
     '''
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        "../../data/{dir_output}/rois/combined_{dtype}_rois.csv"
+        "../../data/{dir_output}/split_tables/combined_{dtype}_initROIs.csv"
     params:
         icv_var = 'MUSE_702',
         exclude_vars = 'MRID',
         suffix = 'NONE'
     output:
-        temp("../../data/{dir_output}/corr_rois/combined_{dtype}_{corr_type}.csv")
+        temp("../../data/{dir_output}/split_tables/combined_{dtype}_{corr_type}.csv")
     resources:
         mem_mb=8000
     shell:
         "python ../../utils/util_corr_icv.py {input} {wildcards.corr_type} {params} {output}"
-
-rule merge_covars_to_corr_rois:
-    '''
-    Merge covars to ROIs
-    '''
-    input:
-        covar="../../data/{dir_output}/covars/combined_{dtype}_covars.csv",
-        roi="../../data/{dir_output}/corr_rois/combined_{dtype}_{ctype}.csv"
-    params:
-        key_var = 'MRID'
-    output:
-        "../../data/{dir_output}/combined/combined_{dtype}_{ctype}.csv"
-    resources:
-        mem_mb=8000
-    shell:
-        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
 
 rule drop_na:
     '''
     Drop NAs in final data
     '''
     input:
-        "../../data/{dir_output}/combined/combined_{dtype}_{ctype}.csv"
+        "../../data/{dir_output}/split_tables/combined_{dtype}.csv"
     output:
-        "../../data/{dir_output}/final/combined_{dtype}_{ctype}.csv"
+        "../../data/{dir_output}/final/combined_{dtype}.csv"
     resources:
         mem_mb=8000
     shell:

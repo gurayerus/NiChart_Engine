@@ -24,6 +24,8 @@ OUT_FILES=expand("../../models/{dir_output}/combined_{dtype}_{ctype}_COMBAT_SPAR
 
 OUT_FILES=expand("../../data/{dir_output}/spare_scores/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
 
+OUT_FILES=expand("../../data/{dir_output}/spare_scores/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_eval.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
+
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
 ###################################
@@ -165,11 +167,11 @@ rule eval_SPARE_scores:
     '''
     input:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
-        pred="../../data/{dir_output}/spare_scores/combined_{dtype}_test_SPARE-{stype}.csv"
+        pred="../../data/{dir_output}/spare_scores/combined_{dtype}_SPARE-{stype}.csv"
     output:
         "../../data/{dir_output}/spare_scores/combined_{dtype}_SPARE-{stype}_eval.csv",
     resources:
         mem_mb=8000
     shell:
-        "python utils/util_eval_spare.py {input} {wildcards.stype} {output}"
+        "python ../../utils/util_eval_spare.py {input} {output}"
 
