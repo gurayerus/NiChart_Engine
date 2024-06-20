@@ -2,6 +2,7 @@ import csv as csv
 import nibabel as nib
 import numpy as np
 import pandas as pd
+import sys
 
 def combine_rois(in_csv, dict_csv, out_csv, key_var = 'MRID', roi_prefix = 'MUSE_'):
     '''
@@ -12,8 +13,6 @@ def combine_rois(in_csv, dict_csv, out_csv, key_var = 'MRID', roi_prefix = 'MUSE
 
     # Read input files
     df_in = pd.read_csv(in_csv, dtype = {'MRID':str})
-    
-    df_in = df_in.head(40)
     
     ## Read derived roi map file to a dictionary
     dict_roi = {}
@@ -58,6 +57,9 @@ if __name__ == "__main__":
     key_var = sys.argv[3]
     roi_prefix = sys.argv[4]
     out_csv = sys.argv[5]
+    
+    # Print run command
+    print('About to run: ' + ' '.join(sys.argv))    
 
     # Call the function
     combine_rois(in_csv, dict_csv, out_csv, key_var, roi_prefix)

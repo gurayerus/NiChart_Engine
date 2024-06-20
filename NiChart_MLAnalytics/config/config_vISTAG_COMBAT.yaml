@@ -2,13 +2,14 @@ version: vISTAG
 config_name: config_vISTAG_COMBAT.yaml
 dir_input: vISTAG/prep_data/out_data
 dir_output: vISTAG/COMBAT
-#list_ROIs: lists/MUSE/list_MUSE_single.csv
-list_ROIs: lists/MUSE/list_MUSE_primary.csv
+list_ROIs: lists/MUSE/list_MUSE_single.csv
+#list_ROIs: lists/MUSE/list_MUSE_primary.csv
+list_derived_ROIs: lists/MUSE/list_MUSE_mapping_derived.csv
 sample_COMBAT_train: lists/samples/COMBAT/sample_COMBAT_ISTAG_train.csv
 sample_COMBAT_test: lists/samples/COMBAT/sample_COMBAT_ISTAG_all.csv
 roi_types:
  - MUSE
-# - DLMUSE
+ - DLMUSE
 corr_types:
  - initROIs
 # - normICV
