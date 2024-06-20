@@ -4,13 +4,14 @@ import os
 import sys
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-localrules: copy_config, select_vars, select_COMBAT_sample_train, select_COMBAT_sample_test, copy_COMBAT_model, remove_COMBAT_suffix, select_output_vars, 
+localrules: copy_config, copy_covars, merge_data, select_vars, select_COMBAT_sample_train, select_COMBAT_sample_test, copy_COMBAT_model, remove_COMBAT_suffix, calc_derived_ROIs 
 
 ## Report data
 report: "report/workflow.rst"
 
 ## Config file
 configfile: "../../config/config_vISTAG_COMBAT.yaml"
+configfile: "../../config/config_vISTAG-v2.0_COMBAT.yaml"
 
 ###################################
 ## Out file names

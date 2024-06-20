@@ -2,13 +2,14 @@
 import pandas as pd
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_data, rename_rois_subsampled, merge_data_subsampled, concat_studies, select_covars, select_roi_vars, merge_covars_to_rois, correct_icv, merge_covars_to_corr_rois
-    
+localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_data, rename_rois_subsampled, merge_data_subsampled, concat_studies, select_covars, select_roi_vars, correct_icv
+
 ### Report data
 #report: "report/workflow.rst"
 
 ## Config file
 configfile: "../../config/config_vISTAG_prep_data.yaml"
+configfile: "../../config/config_vISTAG-v2.0_prep_data.yaml"
 
 ## Read study list from config
 df = pd.read_csv("../../config/" + config["list_studies_merge"])
