@@ -2,7 +2,7 @@
 import pandas as pd
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-localrules: copy_config, select_vars, select_sample_centile, merge_rois, select_rois
+localrules: copy_config, select_vars, select_Centiles_sample, merge_rois, select_rois
     
 ### Report data
 #report: "report/workflow.rst"
@@ -61,7 +61,7 @@ rule select_vars:
         "python ../../utils/util_select_vars.py {input} {params} {output}"
 
 
-rule select_sample_centile:
+rule select_Centiles_sample:
     '''
     Select MRID and Age for the specific centile sample
     '''
