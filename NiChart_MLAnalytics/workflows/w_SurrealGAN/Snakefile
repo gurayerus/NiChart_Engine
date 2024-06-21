@@ -1,22 +1,165 @@
+## Import packages
+import pandas as pd
+import os
+import sys
 
-configfile: "config/config.yaml"
+## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
+#localrules: 
 
-LIST_FOLDS = [0, 1, 2, 3, 4]
+## Config file
+configfile: "../../config/config_vISTAG_SurrealGAN.yaml"
+
+LIST_FOLDS = [x for x in range(1, int(config["num_folds"]) + 1)]
+print(LIST_FOLDS)
 
 ###################################
-## Function definitions
+## Out file names
+
+OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"], config["sample_train"], config["sample_test"], config["list_ROIs"]], dir_output = config["dir_output"])
+
+OUT_RESULTS = expand("../../data/{dir_output}/out_data/combined_{dtype}_{ctype}_COMBAT_SurrealGAN.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+
+OUT_MODELS = expand("../../data/{dir_output}/out_models/combined_{dtype}_{ctype}_COMBAT_SurrealGAN_Model.bin", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+
+OUT_FILES = OUT_CONFIG + OUT_RESULTS + OUT_MODELS
+
+OUT_FILES = OUT_MODELS
+
+print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 
 ###################################
 ## Rules
-rule ALL:
-    input:expand("../../data/ModelSurrealGAN/model{foldno}", foldno = LIST_FOLDS)
 
-rule surrealgan_train:
+rule ALL:
+    '''
+    First rule: lists the final expected out files
+    '''
+    input: OUT_FILES
+
+rule copy_config:
+    '''
+    Rule for copying config files to output dir
+    '''
     input:
-        data="../../data/TestSurrealGAN/train_MUSE_ROI_file.csv",
-        covar="../../data/TestSurrealGAN/train_MUSE_covariate_file.csv"
+        "../../config/{cname}"
     output:
-        "../../data/ModelSurrealGAN/model{foldno}"
+        expand("../../data/{dir_output}/config/{{cname}}", dir_output = config["dir_output"])
     shell:
-        "echo python utils/util_surrealgan_train.py {input} {wildcards.foldno} {output}; "
-        "python utils/util_surrealgan_train.py {input} {wildcards.foldno} {output}"
+        "cp -v {input} {output}"
+
+rule merge_data:
+    '''
+    Merge demog data to ROIs
+    '''
+    input:
+        demog=expand("../../data/{dir_input}/combined_{{dtype}}_covars.csv", dir_input = config["dir_input"]),
+        roi=expand("../../data/{dir_input}/combined_{{dtype}}_{{ctype}}.csv", dir_input = config["dir_input"]),
+    params:
+        key_var = 'MRID'
+    output:
+        temp("../../data/{dir_output}/merged/combined_{dtype,[A-Za-z]+}_{ctype}.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+
+rule select_vars:
+    '''
+    Select variables from data
+    '''
+    input:
+        in_csv="../../data/{dir_output}/merged/combined_{dtype}.csv", 
+        dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
+    params:
+        dict_var = 'Code',
+        covars ='MRID,Age,Sex,SITE,DLICV',
+    output:
+        "../../data/{dir_output}/sel_vars/combined_{dtype}.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_select_vars.py {input} {params} {output}"
+
+rule select_sample_train:
+    '''
+    Select sample (using list)
+    '''
+    input:
+        sample_csv=expand("../../config/{sample}", sample = config["sample_train"]),
+        data_csv=expand("../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv", dir_output = config["dir_output"]),
+    params:
+        key_var = 'MRID'
+        #vars='MRID,Age,Sex,DX_Binary,DLICV_baseline,participant_id,Diagnosis',        
+    output:
+        "../../data/{dir_output}/sel_sample/combined_{dtype}_train.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+
+rule prep_surrealgan_data:
+    '''
+    Split input data into demog and roi files
+    '''
+    input:
+        "../../data/{dir_output}/sel_sample/combined_{dtype}_train.csv"
+    output:
+        demog="../../data/{dir_output}/split_data/combined_{dtype}_train_demog.csv",
+        roi="../../data/{dir_output}/split_data/combined_{dtype}_train_rois.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/util_surrealgan_prep_data.py {input} {output}"
+
+rule surrealgan_train_folds:
+    '''
+    Train SurrealGAN model
+    '''
+    input:
+        demog="../../data/{dir_output}/split_data/combined_{dtype}_train_demog.csv",
+        roi="../../data/{dir_output}/split_data/combined_{dtype}_train_rois.csv",
+    output:
+        "../../data/{dir_output}/training/combined_{dtype}_converged_model_fold{fold}"
+    params:
+        npattern = '4',
+        #final_saving_epoch = '63000',
+        final_saving_epoch = '6300',
+        fold="{fold}",
+        #numfold='50',
+        numfold='10',
+    resources:
+        mem_mb=32000
+    shell:
+        "bash ../../utils/util_surrealgan_train_folds.sh {input} {params} {output}" 
+        
+rule surrealgan_select_model:
+    '''
+    Select final model
+    - FIXME: this step is not clearly explained in Zhijian's instructions
+    -        we use a placeholder for now that creates a placeholder
+    '''
+    input:
+        expand("../../data/{{dir_output}}/training/combined_{{dtype}}_converged_model_fold{fold}", fold = LIST_FOLDS)
+    output:
+        "../../data/{dir_output}/out_models/combined_{dtype}_SurrealGAN_Model.bin"
+    resources:
+        mem_mb=8000
+    shell:
+        "bash touch {output}" 
+
+rule surrealgan_test:
+    '''
+    Test SurrealGAN model using the pretrained model
+    '''
+    input:
+        demog="../../data/{dir_output}/split_data/combined_{dtype}_test_demog.csv",
+        roi="../../data/{dir_output}/split_data/combined_{dtype}_test_rois.csv",
+        mdl="../../data/{dir_output}/out_models/combined_{dtype}_SurrealGAN_Model.pkl.gz"
+    params:
+        epoch = '50000',
+    output:
+        "../../data/{dir_output}/testing/combined_{dtype}_SurrealGAN.csv"
+    resources:
+        mem_mb=32000
+    shell:
+        "bash ../../utils/util_surrealgan_test.sh {input} {params} {output}" 

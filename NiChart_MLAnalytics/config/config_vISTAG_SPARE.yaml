@@ -1,0 +1,16 @@
+version: vISTAG
+config_name: config_vISTAG_SPARE.yaml
+dir_input: vISTAG/COMBAT/out_data
+dir_output: vISTAG/SPARE
+list_ROIs: lists/MUSE/list_MUSE_single.csv
+sample_SPARE_AD: lists/samples/SPARE/sample_SPARE_AD_all.csv
+sample_SPARE_Age: lists/samples/SPARE/sample_SPARE_Age_all.csv
+roi_types:
+ - MUSE
+ - DLMUSE
+corr_types:
+ - initROIs
+spare_types:
+ - AD
+ - Age
+ 

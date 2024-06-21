@@ -8,8 +8,8 @@ localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_dat
 #report: "report/workflow.rst"
 
 ## Config file
-configfile: "../../config/config_vISTAG_prep_data.yaml"
 configfile: "../../config/config_vISTAG-v2.0_prep_data.yaml"
+#configfile: "../../config/config_vISTAG_prep_data.yaml"
 
 ## Read study list from config
 df = pd.read_csv("../../config/" + config["list_studies_merge"])

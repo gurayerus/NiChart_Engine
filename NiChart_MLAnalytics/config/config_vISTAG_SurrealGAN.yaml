@@ -1,0 +1,13 @@
+version: vISTAG
+config_name: config_vISTAG_SurrealGAN.yaml
+dir_input: vISTAG/COMBAT/out_data
+dir_output: vISTAG/SurrealGAN
+list_ROIs: lists/MUSE/list_MUSE_single.csv
+sample_train: lists/samples/SurrealGAN/sample_SurrealGAN_mAging-NatMed_train.csv
+sample_test: lists/samples/SurrealGAN/sample_SurrealGAN_mAging-NatMed_test.csv
+num_folds: 10
+roi_types:
+ - MUSE
+corr_types:
+ - initROIs
+ 

@@ -7,26 +7,21 @@ import sys
 localrules: copy_config, select_vars, select_SPARE_sample, rename_target_var, split_train_test, copy_SPARE_model, eval_SPARE_scores
 
 ## Config file
-configfile: "../../config/config_vDemo_SPARE.yaml"
+configfile: "../../config/config_vISTAG_SPARE.yaml"
 
 ###################################
 ## Out file names
 
-#OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = ["config_SPARE.yaml", config["sample_SPARE_train"], config["sample_SPARE_test"], config["list_ROIs"]], dir_output = config["dir_output"])
+OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"], config["sample_SPARE_AD"], config["sample_SPARE_Age"], config["list_ROIs"]], dir_output = config["dir_output"])
 
-#OUT_RESULTS = expand("../../data/{dir_output}/data/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+OUT_RESULTS = expand("../../data/{dir_output}/out_data/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
 
-#OUT_FILES = OUT_CONFIG + OUT_RESULTS
+OUT_MODELS = expand("../../data/{dir_output}/out_models/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_Model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
 
-OUT_FILES=expand("../../data/{dir_output}/model/combined_{dtype}_{ctype}_SPARE-{stype}_model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
-
-OUT_FILES=expand("../../models/{dir_output}/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
-
-OUT_FILES=expand("../../data/{dir_output}/spare_scores/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
-
-OUT_FILES=expand("../../data/{dir_output}/spare_scores/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_eval.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = config["dir_output"])
+OUT_FILES = OUT_CONFIG + OUT_RESULTS + OUT_MODELS
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
+#input()
 
 ###################################
 ## Rules
@@ -128,34 +123,21 @@ rule sparesvm_train:
         vkey='MRID',
         target = 'Target'
     output:
-        "../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
+        "../../data/{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
     resources:
         mem_mb=16000
     shell:
         "bash ../../utils/util_spare_train.sh {input} {params} {output}"
         
-rule copy_SPARE_model:
-    '''
-    Copy SPARE model to models
-    '''
-    input:
-        "../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
-    output:
-        "../../models/{dir_output}/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
-    resources:
-        mem_mb=8000
-    shell:
-        "cp {input} {output}"
-
 rule sparesvm_test:
     '''
     Test SPARE model using the split test sample
     '''
     input:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
-        mdl="../../data/{dir_output}/model/combined_{dtype}_SPARE-{stype}_model.pkl.gz"
+        mdl="../../data/{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
     output:
-        "../../data/{dir_output}/spare_scores/combined_{dtype}_SPARE-{stype}.csv"
+        "../../data/{dir_output}/out_data/combined_{dtype}_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:

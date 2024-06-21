@@ -10,3 +10,4 @@ roi_types:
  - MUSE
 corr_types:
  - initROIs
+ - normICV
