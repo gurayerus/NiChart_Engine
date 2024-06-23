@@ -1,7 +1,7 @@
 version: vISTAG
 config_name: config_vISTAG_prep_data.yaml
 dir_input: init_data/ISTAGING-v1.2
-dir_output: vISTAG/prep_data
+dir_output: vISTAG-Test/prep_data
 list_covars: lists/covars/list_covar_all.csv
 list_ROIs: lists/MUSE/list_MUSE_all.csv
 #list_ROIs: lists/MUSE/list_MUSE_primary.csv

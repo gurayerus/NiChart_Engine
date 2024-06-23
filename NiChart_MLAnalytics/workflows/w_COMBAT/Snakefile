@@ -11,7 +11,7 @@ report: "report/workflow.rst"
 
 ## Config file
 configfile: "../../config/config_vISTAG-v2.0_COMBAT.yaml"
-#configfile: "../../config/config_vISTAG_COMBAT.yaml"
+configfile: "../../config/config_vISTAG_COMBAT.yaml"
 
 ###################################
 ## Out file names
@@ -35,6 +35,15 @@ OUT_FILES = OUT_CONFIG + OUT_COVARS + OUT_RESULTS + OUT_MODELS
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 #input()
 
+
+###################################
+## Config vars
+dir_input = config["dir_input"]
+dir_output = config["dir_output"]
+rois = config["list_ROIs"]
+sample_train = config["sample_COMBAT_train"]
+sample_test = config["sample_COMBAT_test"]
+
 ###################################
 ## Rules
 
@@ -51,7 +60,7 @@ rule copy_config:
     input:
         "../../config/{cname}"
     output:
-        expand("../../data/{dir_output}/config/{{cname}}", dir_output = config["dir_output"])
+        f"../../data/{dir_output}/config/{{cname}}"
     shell:
         "cp -v {input} {output}"
 
@@ -60,9 +69,9 @@ rule copy_covars:
     Copy covar data to final output
     '''
     input:
-        expand("../../data/{dir_input}/combined_{{dtype}}_covars.csv", dir_input = config["dir_input"]),
+        f"../../data/{dir_input}/combined_{{dtype}}_covars.csv"
     output:
-        "../../data/{dir_output}/out_data/combined_{dtype}_covars.csv"
+        f"../../data/{dir_output}/out_data/combined_{{dtype}}_covars.csv"
     resources:
         mem_mb=8000
     shell:
@@ -73,12 +82,12 @@ rule merge_data:
     Merge demog data to ROIs
     '''
     input:
-        demog=expand("../../data/{dir_input}/combined_{{dtype}}_{{ctype}}.csv", dir_input = config["dir_input"]),
-        roi=expand("../../data/{dir_input}/combined_{{dtype}}_covars.csv", dir_input = config["dir_input"]),
+        demog=f"../../data/{dir_input}/combined_{{dtype}}_{{ctype}}.csv",
+        roi=f"../../data/{dir_input}/combined_{{dtype}}_covars.csv",
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/{dir_output}/merged/combined_{dtype}_{ctype}.csv")
+        temp(f"../../data/{dir_output}/merged/combined_{{dtype}}_{{ctype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -89,13 +98,13 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/{dir_output}/merged/combined_{dtype}.csv", 
-        dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
+        in_csv=f"../../data/{dir_output}/merged/combined_{{dtype}}.csv",
+        dict_csv=f"../../config/{rois}"
     params:
         dict_var = 'Code',
         covars ='MRID,Age,Sex,SITE,DLICV',
     output:
-        "../../data/{dir_output}/sel_vars/combined_{dtype}.csv"
+        f"../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv"
     resources:
         mem_mb=8000
     shell:
@@ -106,12 +115,12 @@ rule select_COMBAT_sample_train:
     Select sample (using list)
     '''
     input:
-        sample_csv=expand("../../config/{sample}", sample = config["sample_COMBAT_train"]),
-        data_csv=expand("../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv", dir_output = config["dir_output"]),
+        sample_csv=f"../../config/{sample_train}",
+        data_csv=f"../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv"
     params:
         key_var = 'MRID'
     output:
-        "../../data/{dir_output}/sel_sample/combined_{dtype}_train.csv"
+        f"../../data/{dir_output}/sel_sample/combined_{{dtype}}_train.csv"
     resources:
         mem_mb=8000
     shell:
@@ -122,12 +131,12 @@ rule select_COMBAT_sample_test:
     Select sample (using list)
     '''
     input:
-        sample_csv=expand("../../config/{sample}", sample = config["sample_COMBAT_test"]),
-        data_csv=expand("../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv", dir_output = config["dir_output"]),
+        sample_csv=f"../../config/{sample_test}",
+        data_csv=f"../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv",
     params:
         key_var = 'MRID'
     output:
-        "../../data/{dir_output}/sel_sample/combined_{dtype}_test.csv"
+        f"../../data/{dir_output}/sel_sample/combined_{{dtype}}_test.csv"
     resources:
         mem_mb=8000
     shell:
@@ -138,13 +147,13 @@ rule filter_age_COMBAT_sample_test:
     Select sample (using list)
     '''
     input:
-        "../../data/{dir_output}/sel_sample/combined_{dtype}_test.csv"
+        f"../../data/{dir_output}/sel_sample/combined_{{dtype}}_test.csv"
     params:
         var_name = 'Age',
         min_val = '20',
         max_val = '97'
     output:
-        "../../data/{dir_output}/sel_sample/combined_{dtype}_test_filtered.csv"
+        f"../../data/{dir_output}/sel_sample/combined_{{dtype}}_test_filtered.csv"
     resources:
         mem_mb=8000
     shell:
@@ -155,7 +164,7 @@ rule COMBAT_train:
     Train COMBAT model
     '''    
     input:
-        "../../data/{dir_output}/sel_sample/combined_{dtype}_train.csv"
+        f"../../data/{dir_output}/sel_sample/combined_{{dtype}}_train.csv"
     params:
         batch='SITE',
         vkey='MRID',
@@ -163,8 +172,8 @@ rule COMBAT_train:
         vcat='Sex',
         vspline='Age'
     output:
-        mdl="../../data/{dir_output}/out_models/combined_{dtype}_COMBATModel.pkl.gz",
-        csv="../../data/{dir_output}/out_models/combined_{dtype}_train_COMBATOut.csv"
+        mdl=f"../../data/{dir_output}/out_models/combined_{{dtype}}_COMBATModel.pkl.gz",
+        csv=f"../../data/{dir_output}/out_models/combined_{{dtype}}_train_COMBATOut.csv"
     resources:
         mem_mb=16000
     shell:
@@ -175,10 +184,10 @@ rule COMBAT_apply:
     Apply COMBAT model to calculate harmonized values
     '''    
     input:
-        data="../../data/{dir_output}/sel_sample/combined_{dtype}_test_filtered.csv",
-        mdl="../../data/{dir_output}/out_models/combined_{dtype}_COMBATModel.pkl.gz"
+        data=f"../../data/{dir_output}/sel_sample/combined_{{dtype}}_test_filtered.csv",
+        mdl=f"../../data/{dir_output}/out_models/combined_{{dtype}}_COMBATModel.pkl.gz"
     output:
-        "../../data/{dir_output}/harmonized/combined_{dtype}_COMBAT_init.csv"
+        f"../../data/{dir_output}/harmonized/combined_{{dtype}}_COMBAT_init.csv"
     resources:
         mem_mb=16000
     shell:
@@ -191,11 +200,11 @@ rule remove_COMBAT_suffix:
     FIXME: Ideally COMBAT should be run with an arg to create output var names without a suffix
     '''        
     input:
-        "../../data/{dir_output}/harmonized/combined_{dtype}_COMBAT_init.csv"
+        f"../../data/{dir_output}/harmonized/combined_{{dtype}}_COMBAT_init.csv"
     params:
         rm_suff='_HARM'
     output:
-        "../../data/{dir_output}/harmonized/combined_{dtype}_COMBAT_nosuffix.csv"
+        f"../../data/{dir_output}/harmonized/combined_{{dtype}}_COMBAT_nosuffix.csv"
     resources:
         mem_mb=8000
     shell:
@@ -207,13 +216,13 @@ rule calc_derived_ROIs:
     - If the input data already includes derived ROIs, they will not be updated
     '''        
     input:
-        in_csv="../../data/{dir_output}/harmonized/combined_{dtype}_COMBAT_nosuffix.csv",
-        dict=expand("../../config/{rois}", rois = config["list_derived_ROIs"])
+        in_csv=f"../../data/{dir_output}/harmonized/combined_{{dtype}}_COMBAT_nosuffix.csv",
+        dict=f"../../config/{rois}"
     params:
         key_var='MRID',
         roi_prefix='MUSE_'
     output:
-        csv="../../data/{dir_output}/out_data/combined_{dtype}_COMBAT.csv"
+        csv=f"../../data/{dir_output}/out_data/combined_{{dtype}}_COMBAT.csv"
     resources:
         mem_mb=8000
     shell:

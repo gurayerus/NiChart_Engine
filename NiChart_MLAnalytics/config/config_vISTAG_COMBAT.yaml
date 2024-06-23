@@ -1,7 +1,7 @@
 version: vISTAG
 config_name: config_vISTAG_COMBAT.yaml
-dir_input: vISTAG/prep_data/out_data
-dir_output: vISTAG/COMBAT
+dir_input: vISTAG-Test/prep_data/out_data
+dir_output: vISTAG-Test/COMBAT
 list_ROIs: lists/MUSE/list_MUSE_single.csv
 #list_ROIs: lists/MUSE/list_MUSE_primary.csv
 list_derived_ROIs: lists/MUSE/list_MUSE_mapping_derived.csv

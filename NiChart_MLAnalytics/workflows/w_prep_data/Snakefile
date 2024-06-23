@@ -9,7 +9,7 @@ localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_dat
 
 ## Config file
 configfile: "../../config/config_vISTAG-v2.0_prep_data.yaml"
-#configfile: "../../config/config_vISTAG_prep_data.yaml"
+configfile: "../../config/config_vISTAG_prep_data.yaml"
 
 ## Read study list from config
 df = pd.read_csv("../../config/" + config["list_studies_merge"])
@@ -27,6 +27,13 @@ OUT_FILES = OUT_CONFIG + OUT_RESULTS
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES) + '\n')
 
 ###################################
+## Config vars
+dir_input = config["dir_input"]
+dir_output = config["dir_output"]
+rois = config["list_ROIs"]
+covars = config["list_covars"]
+
+###################################
 ## Rules
 
 rule ALL:
@@ -42,7 +49,7 @@ rule copy_config:
     input:
         "../../config/{cname}"
     output:
-        expand("../../data/{dir_output}/config/{{cname}}", dir_output = config["dir_output"])
+        f"../../data/{dir_output}/config/{{cname}}"
     shell:
         "cp -v {input} {output}"
     
@@ -51,9 +58,9 @@ rule make_sample_list:
     Rule for selecting a smaller subset of a study dataset
     '''
     input:
-        expand("../../data/{dir_input}/Studies/{{study}}/{{study}}_DLMUSE.csv", dir_input = config["dir_input"]),
+        f"../../data/{dir_input}/Studies/{{study}}/{{study}}_DLMUSE.csv"
     output:
-        "../../data/{dir_output}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
+        f"../../data/{dir_output}/subsampled/{{study}}-n{{num_sample}}/sample_{{study}}-n{{num_sample}}.csv"
     params:
         random_state = '42',
         out_vars = 'MRID',
@@ -65,10 +72,10 @@ rule select_sample:
     Rule for creating data files with the selected sample
     '''
     input:
-        in_csv=expand("../../data/{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv", dir_input = config["dir_input"]),
-        in_list="../../data/{dir_output}/subsampled/{study}-n{num_sample}/sample_{study}-n{num_sample}.csv"
+        in_csv=f"../../data/{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv",
+        in_list=f"../../data/{dir_output}/subsampled/{{study}}-n{{num_sample}}/sample_{{study}}-n{{num_sample}}.csv"
     output:
-        temp("../../data/{dir_output}/subsampled/{study}-n{num_sample}/{study}-n{num_sample}_{dtype}.csv")
+        temp(f"../../data/{dir_output}/subsampled/{{study}}-n{{num_sample}}/{{study}}-n{{num_sample}}_{{dtype}}.csv")
     params:
         key_var = 'MRID'
     shell:
@@ -79,10 +86,10 @@ rule rename_rois:
     Rename MUSE roi indices to roi codes
     '''
     input:
-        roi=expand("../../data/{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv", dir_input = config["dir_input"]),
-        dict=expand("../../config/{rois}", rois = config["list_ROIs"])
+        roi=f"../../data/{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv",
+        dict=f"../../config/{rois}"
     output:
-        temp("../../data/{dir_output}/renamed/{study}_{dtype}.csv")
+        temp(f"../../data/{dir_output}/renamed/{{study}}_{{dtype}}.csv")
     params:
         var_from = 'Index',
         var_to = 'Code'
@@ -96,12 +103,12 @@ rule merge_data:
     Merge demog data to ROIs
     '''
     input:
-        demog=expand("../../data/{dir_input}/Studies/{{study}}/{{study}}_DemogClin.csv", dir_input = config["dir_input"]),
-        roi="../../data/{dir_output}/renamed/{study}_{dtype}.csv"
+        demog=f"../../data/{dir_input}/Studies/{{study}}/{{study}}_DemogClin.csv",
+        roi=f"../../data/{dir_output}/renamed/{{study}}_{{dtype}}.csv"
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/{dir_output}/merged/{study}_{dtype}.csv")
+        temp(f"../../data/{dir_output}/merged/{{study}}_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -112,10 +119,10 @@ rule rename_rois_subsampled:
     Rename MUSE roi indices to roi codes for subsampled studies
     '''
     input:
-        roi="../../data/{dir_output}/subsampled/{study}/{study}_{dtype}.csv",
-        dict=expand("../../config/{rois}", rois = config["list_ROIs"])
+        roi=f"../../data/{dir_output}/subsampled/{{study}}/{{study}}_{{dtype}}.csv",
+        dict=f"../../config/{rois}"
     output:
-        temp("../../data/{dir_output}/renamed/{study}_{dtype}.csv")
+        temp(f"../../data/{dir_output}/renamed/{{study}}_{{dtype}}.csv")
     params:
         var_from = 'Index',
         var_to = 'Code'
@@ -129,12 +136,12 @@ rule merge_data_subsampled:
     Merge demog data to ROIs for subsampled studies
     '''
     input:
-        demog="../../data/{dir_output}/subsampled/{study}/{study}_DemogClin.csv",
-        roi="../../data/{dir_output}/renamed/{study}_{dtype}.csv"
+        demog=f"../../data/{dir_output}/subsampled/{{study}}/{{study}}_DemogClin.csv",
+        roi=f"../../data/{dir_output}/renamed/{{study}}_{{dtype}}.csv"
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/{dir_output}/merged/{study}_{dtype}.csv")
+        temp(f"../../data/{dir_output}/merged/{{study}}_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -145,11 +152,11 @@ rule concat_studies:
     Combine studies into a single csv
     '''
     input:
-        expand("../../data/{{dir_output}}/merged/{study}_{{dtype}}.csv", study=LIST_STUDIES)
+        expand("../../data/{dir_output}/merged/{study}_{{dtype}}.csv", dir_output = dir_output, study=LIST_STUDIES)
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/{dir_output}/combined/combined_{dtype}.csv")
+        temp(f"../../data/{dir_output}/combined/combined_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -160,9 +167,9 @@ rule qc_ROIs:
     Discard QC fail cases based on distributions
     '''
     input:
-        "../../data/{dir_output}/combined/combined_{dtype}.csv"
+        f"../../data/{dir_output}/combined/combined_{{dtype}}.csv"
     output:
-        temp("../../data/{dir_output}/qced/combined_{dtype}.csv")
+        temp(f"../../data/{dir_output}/qced/combined_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -176,13 +183,13 @@ rule select_covars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/{dir_output}/qced/combined_{dtype}.csv",
-        dict_csv=expand("../../config/{covars}", covars = config["list_covars"])        
+        in_csv=f"../../data/{dir_output}/qced/combined_{{dtype}}.csv",
+        dict_csv=f"../../config/{covars}"
     params:
         dict_var = 'Name',
         vars_list = 'MRID',
     output:
-        temp("../../data/{dir_output}/split_tables/combined_{dtype}_covars.csv")
+        temp(f"../../data/{dir_output}/split_tables/combined_{{dtype}}_covars.csv")
     resources:
         mem_mb=8000
     shell:
@@ -193,13 +200,13 @@ rule select_roi_vars:
     Select variables from data
     '''
     input:
-        in_csv="../../data/{dir_output}/qced/combined_{dtype}.csv",
-        dict=expand("../../config/{rois}", rois = config["list_ROIs"])
+        in_csv=f"../../data/{dir_output}/qced/combined_{{dtype}}.csv",
+        dict=f"../../config/{rois}"
     params:
         dict_var = 'Code',
         vars_list = 'MRID',
     output:
-        temp("../../data/{dir_output}/split_tables/combined_{dtype}_initROIs.csv")
+        temp(f"../../data/{dir_output}/split_tables/combined_{{dtype}}_initROIs.csv")
     resources:
         mem_mb=8000
     shell:
@@ -210,13 +217,13 @@ rule correct_icv:
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        "../../data/{dir_output}/split_tables/combined_{dtype}_initROIs.csv"
+        f"../../data/{dir_output}/split_tables/combined_{{dtype}}_initROIs.csv"
     params:
         icv_var = 'MUSE_702',
         exclude_vars = 'MRID',
         suffix = 'NONE'
     output:
-        temp("../../data/{dir_output}/split_tables/combined_{dtype}_{corr_type}.csv")
+        temp(f"../../data/{dir_output}/split_tables/combined_{{dtype}}_{{corr_type}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -227,9 +234,9 @@ rule drop_na:
     Drop NAs in final data
     '''
     input:
-        "../../data/{dir_output}/split_tables/combined_{dtype}.csv"
+        f"../../data/{dir_output}/split_tables/combined_{{dtype}}.csv"
     output:
-        "../../data/{dir_output}/out_data/combined_{dtype}.csv"
+        f"../../data/{dir_output}/out_data/combined_{{dtype}}.csv"
     resources:
         mem_mb=8000
     shell:
