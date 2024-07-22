@@ -8,8 +8,8 @@ localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_dat
 #report: "report/workflow.rst"
 
 ## Config file
-configfile: "../../config/config_vISTAG-v2.0_prep_data.yaml"
-configfile: "../../config/config_vISTAG_prep_data.yaml"
+configfile: "../../config/vTest/config_prep_data.yaml"
+configfile: "../../config/vISTAG1/config_prep_data.yaml"
 
 ## Read study list from config
 df = pd.read_csv("../../config/" + config["list_studies_merge"])
@@ -65,7 +65,7 @@ rule make_sample_list:
         random_state = '42',
         out_vars = 'MRID',
     shell:
-        "python ../../utils/util_subsample_df.py {input} {wildcards.num_sample} {params} {output}"
+        "python ../../utils/generic/util_subsample_df.py {input} {wildcards.num_sample} {params} {output}"
 
 rule select_sample:
     '''
@@ -79,7 +79,7 @@ rule select_sample:
     params:
         key_var = 'MRID'
     shell:
-        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
     
 rule rename_rois:
     '''
@@ -96,7 +96,7 @@ rule rename_rois:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_rename_df_columns.py {input} {params} {output}"
+        "python ../../utils/generic/util_rename_df_columns.py {input} {params} {output}"
 
 rule merge_data:
     '''
@@ -112,7 +112,7 @@ rule merge_data:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
 
 rule rename_rois_subsampled:
     '''
@@ -129,7 +129,7 @@ rule rename_rois_subsampled:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_rename_df_columns.py {input} {params} {output}"
+        "python ../../utils/generic/util_rename_df_columns.py {input} {params} {output}"
 
 rule merge_data_subsampled:
     '''
@@ -145,7 +145,7 @@ rule merge_data_subsampled:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
 
 rule concat_studies:
     '''
@@ -160,7 +160,7 @@ rule concat_studies:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_concat_dfs.py {output} {input}"
+        "python ../../utils/generic/util_concat_dfs.py {output} {input}"
 
 rule qc_ROIs:
     '''
@@ -173,7 +173,7 @@ rule qc_ROIs:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_qc_ROIs.py {input} {output}"
+        "python ../../utils/generic/util_qc_ROIs.py {input} {output}"
 
 
 ruleorder: select_covars > correct_icv
@@ -193,7 +193,7 @@ rule select_covars:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_select_vars.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
 
 rule select_roi_vars:
     '''
@@ -206,18 +206,18 @@ rule select_roi_vars:
         dict_var = 'Code',
         vars_list = 'MRID',
     output:
-        temp(f"../../data/{dir_output}/split_tables/combined_{{dtype}}_initROIs.csv")
+        temp(f"../../data/{dir_output}/split_tables/combined_{{dtype}}_raw.csv")
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_select_vars.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
 
 rule correct_icv:
     '''
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        f"../../data/{dir_output}/split_tables/combined_{{dtype}}_initROIs.csv"
+        f"../../data/{dir_output}/split_tables/combined_{{dtype}}_raw.csv"
     params:
         icv_var = 'MUSE_702',
         exclude_vars = 'MRID',
@@ -227,7 +227,7 @@ rule correct_icv:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_corr_icv.py {input} {wildcards.corr_type} {params} {output}"
+        "python ../../utils/generic/util_corr_icv.py {input} {wildcards.corr_type} {params} {output}"
 
 rule drop_na:
     '''
@@ -240,4 +240,4 @@ rule drop_na:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_drop_na.py {input} {output}"
+        "python ../../utils/generic/util_drop_na.py {input} {output}"

@@ -7,7 +7,7 @@ import sys
 localrules: copy_config, select_vars, select_SPARE_sample, rename_target_var, split_train_test, copy_SPARE_model, eval_SPARE_scores
 
 ## Config file
-configfile: "../../config/config_vISTAG_SPARE.yaml"
+configfile: "../../config/vTest/config_SPARE.yaml"
 
 ###################################
 ## Out file names
@@ -58,7 +58,7 @@ rule select_vars:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_select_vars.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
 
 def get_spare_sample(wildcards):
     path_spare='../../config/' + config["sample_SPARE_" + wildcards.stype]
@@ -78,7 +78,7 @@ rule select_SPARE_sample:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
 
 rule rename_target_var:
     '''
@@ -94,7 +94,7 @@ rule rename_target_var:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_rename_column.py {input} {params} {output}"
+        "python ../../utils/generic/util_rename_column.py {input} {params} {output}"
 
 rule split_train_test:
     '''
@@ -111,7 +111,7 @@ rule split_train_test:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_split_train_test.py {input} {params} {output}"
+        "python ../../utils/generic/util_split_train_test.py {input} {params} {output}"
 
 rule sparesvm_train:
     '''
@@ -127,7 +127,7 @@ rule sparesvm_train:
     resources:
         mem_mb=16000
     shell:
-        "bash ../../utils/util_spare_train.sh {input} {params} {output}"
+        "bash ../../utils/spare/util_spare_train.sh {input} {params} {output}"
         
 rule sparesvm_test:
     '''
@@ -141,7 +141,7 @@ rule sparesvm_test:
     resources:
         mem_mb=16000
     shell:
-        "bash ../../utils/util_spare_test.sh {input} {output}"
+        "bash ../../utils/spare/util_spare_test.sh {input} {output}"
 
 rule eval_SPARE_scores:
     '''
@@ -155,5 +155,5 @@ rule eval_SPARE_scores:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_eval_spare.py {input} {output}"
+        "python ../../utils/spare/util_eval_spare.py {input} {output}"
 

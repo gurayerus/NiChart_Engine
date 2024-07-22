@@ -10,17 +10,12 @@ localrules: copy_config, copy_covars, merge_data, select_vars, select_COMBAT_sam
 report: "report/workflow.rst"
 
 ## Config file
-configfile: "../../config/config_vISTAG-v2.0_COMBAT.yaml"
-configfile: "../../config/config_vISTAG_COMBAT.yaml"
+configfile: "../../config/vTest/config_COMBAT.yaml"
 
 ###################################
 ## Out file names
 
 OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"], config["sample_COMBAT_train"], config["sample_COMBAT_test"], config["list_ROIs"]], dir_output = config["dir_output"])
-
-#OUT_RESULTS = expand("../../data/{dir_output}/out_models/combined_{dtype}_{ctype}_COMBATModel.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
-
-#OUT_RESULTS = expand("../../out_models/{dir_output}/combined_{dtype}_{ctype}_COMBATModel.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
 
 OUT_COVARS = expand("../../data/{dir_output}/out_data/combined_{dtype}_covars.csv", dtype = config["roi_types"], dir_output = config["dir_output"])
 
@@ -30,10 +25,8 @@ OUT_MODELS = expand("../../data/{dir_output}/out_models/combined_{dtype}_{ctype}
 
 OUT_FILES = OUT_CONFIG + OUT_COVARS + OUT_RESULTS + OUT_MODELS
 
-#OUT_FILES=["../../data/COMBAT/vDemo/harmonized/combined_MUSE_raw_test_COMBATOut.csv"]
-
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
-#input()
+input()
 
 
 ###################################
@@ -69,7 +62,7 @@ rule copy_covars:
     Copy covar data to final output
     '''
     input:
-        f"../../data/{dir_input}/combined_{{dtype}}_covars.csv"
+        f"../../data/{dir_input}/out_data/combined_{{dtype}}_covars.csv"
     output:
         f"../../data/{dir_output}/out_data/combined_{{dtype}}_covars.csv"
     resources:
@@ -82,8 +75,8 @@ rule merge_data:
     Merge demog data to ROIs
     '''
     input:
-        demog=f"../../data/{dir_input}/combined_{{dtype}}_{{ctype}}.csv",
-        roi=f"../../data/{dir_input}/combined_{{dtype}}_covars.csv",
+        demog=f"../../data/{dir_input}/out_data/combined_{{dtype}}_{{ctype}}.csv",
+        roi=f"../../data/{dir_input}/out_data/combined_{{dtype}}_covars.csv",
     params:
         key_var = 'MRID'
     output:
@@ -91,7 +84,7 @@ rule merge_data:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
 
 rule select_vars:
     '''
@@ -108,7 +101,7 @@ rule select_vars:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_select_vars.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
 
 rule select_COMBAT_sample_train:
     '''
@@ -124,7 +117,7 @@ rule select_COMBAT_sample_train:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
 
 rule select_COMBAT_sample_test:
     '''
@@ -140,7 +133,7 @@ rule select_COMBAT_sample_test:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_merge_dfs.py {input} {params} {output}"
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
 
 rule filter_age_COMBAT_sample_test:
     '''
@@ -157,7 +150,7 @@ rule filter_age_COMBAT_sample_test:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_filter_var.py {input} {params} {output}"
+        "python ../../utils/generic/util_filter_var.py {input} {params} {output}"
 
 rule COMBAT_train:
     '''
@@ -177,7 +170,7 @@ rule COMBAT_train:
     resources:
         mem_mb=16000
     shell:
-        "bash ../../utils/util_combat_train.sh {input} {params} {output}"
+        "bash ../../utils/combat/util_combat_train.sh {input} {params} {output}"
 
 rule COMBAT_apply:
     '''
@@ -208,7 +201,7 @@ rule remove_COMBAT_suffix:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_remove_suffix.py {input} {params} {output}; "
+        "python ../../utils/generic/util_remove_suffix.py {input} {params} {output}; "
         
 rule calc_derived_ROIs:
     '''
@@ -226,4 +219,4 @@ rule calc_derived_ROIs:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_combine_MUSE_rois.py {input} {params} {output}"
+        "python ../../utils/generic/util_combine_MUSE_rois.py {input} {params} {output}"

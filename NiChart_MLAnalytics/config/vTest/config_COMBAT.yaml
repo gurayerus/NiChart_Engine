@@ -1,0 +1,14 @@
+version: vTest
+config_name: vTest/config_COMBAT.yaml
+dir_input: vTest/prep_data
+dir_output: vTest/COMBAT
+list_ROIs: vTest/lists/MUSE/list_MUSE_primary.csv
+sample_COMBAT_train: vTest/lists/samples/COMBAT/sample_COMBAT_ISTAG_train.csv
+sample_COMBAT_test: vTest/lists/samples/COMBAT/sample_COMBAT_ISTAG_all.csv
+roi_types:
+ - MUSE
+ - DLMUSE
+corr_types:
+ - raw
+# - normICV
+
