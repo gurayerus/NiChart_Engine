@@ -1,10 +1,10 @@
 version: vTest
 config_name: vTest/config_prep_data.yaml
 dir_input: init_data/ISTAGING-v1.2
-dir_output: vTest/prep_data
 list_covars: vTest/lists/covars/list_covar_all.csv
-list_ROIs: vTest/lists/MUSE/list_MUSE_all.csv
+#list_ROIs: vTest/lists/MUSE/list_MUSE_all.csv
 #list_ROIs: vTest/lists/MUSE/list_MUSE_primary.csv
+list_ROIs: vTest/lists/MUSE/list_MUSE_short.csv
 list_studies_merge: vTest/lists/studies/list_studies_ISTAGING.csv
 roi_types:
  - MUSE
