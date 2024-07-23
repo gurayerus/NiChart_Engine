@@ -5,7 +5,8 @@ list_covars: vTest/lists/covars/list_covar_all.csv
 #list_ROIs: vTest/lists/MUSE/list_MUSE_all.csv
 #list_ROIs: vTest/lists/MUSE/list_MUSE_primary.csv
 list_ROIs: vTest/lists/MUSE/list_MUSE_short.csv
-list_studies_merge: vTest/lists/studies/list_studies_ISTAGING.csv
+#list_studies_merge: vTest/lists/studies/list_studies_ISTAGING.csv
+list_studies_merge: vTest/lists/studies/list_studies_short.csv
 roi_types:
  - MUSE
  - DLMUSE

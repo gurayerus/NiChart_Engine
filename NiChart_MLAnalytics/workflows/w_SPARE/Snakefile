@@ -62,7 +62,7 @@ rule select_vars:
         dict_var = 'Code',
         covars ='MRID,Age,Sex,DLICV',
     output:
-        f"../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv"
+        temp(f"../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -82,7 +82,7 @@ rule select_SPARE_sample:
     params:
         key_var = 'MRID'
     output:
-        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all.csv"
+        temp("../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all.csv")
     resources:
         mem_mb=8000
     shell:
@@ -98,7 +98,7 @@ rule rename_target_var:
         num_col = '1',
         name_col = 'Target'
     output:
-        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv"
+        temp("../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv")
     resources:
         mem_mb=8000
     shell:
@@ -114,8 +114,8 @@ rule split_train_test:
         strat_vars = 'Sex,Target',
         test_ratio = '0.4'
     output:
-        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_train.csv",
-        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
+        temp("../../data/{dir_output}/train_test/{stype}/combined_{dtype}_train.csv"),
+        temp("../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv"),
     resources:
         mem_mb=8000
     shell:
