@@ -8,6 +8,7 @@ localrules: copy_config, select_vars, select_SPARE_sample, rename_target_var, sp
 
 ## Config file
 configfile: "../../config/vTest/config_SPARE.yaml"
+configfile: "../../config/vISTAG1/config_SPARE.yaml"
 
 ###################################
 ## Read config vars and lists
@@ -22,13 +23,14 @@ rois = config["list_ROIs"]
 
 OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"], config["sample_SPARE_AD"], config["sample_SPARE_Age"], config["list_ROIs"]], dir_output = dir_output)
 
-OUT_RESULTS = expand("../../data/{dir_output}/out_data/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output)
+OUT_RESULTS = expand("../../data/{dir_output}/out_data/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output) + expand("../../data/{dir_output}/pred_eval/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_eval.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output)
 
 OUT_MODELS = expand("../../data/{dir_output}/out_models/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_Model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output)
 
+
 OUT_FILES = OUT_CONFIG + OUT_RESULTS + OUT_MODELS
 
-print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
+#print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 #input()
 
 ###################################
@@ -98,7 +100,7 @@ rule rename_target_var:
         num_col = '1',
         name_col = 'Target'
     output:
-        temp("../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv")
+        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv"
     resources:
         mem_mb=8000
     shell:
@@ -114,8 +116,8 @@ rule split_train_test:
         strat_vars = 'Sex,Target',
         test_ratio = '0.4'
     output:
-        temp("../../data/{dir_output}/train_test/{stype}/combined_{dtype}_train.csv"),
-        temp("../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv"),
+        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_train.csv",
+        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
     resources:
         mem_mb=8000
     shell:
@@ -145,7 +147,7 @@ rule sparesvm_test:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
         mdl="../../data/{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
     output:
-        "../../data/{dir_output}/out_data/combined_{dtype}_SPARE-{stype}.csv"
+        "../../data/{dir_output}/pred_test/combined_{dtype}_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:
@@ -157,11 +159,25 @@ rule eval_SPARE_scores:
     '''
     input:
         data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
-        pred="../../data/{dir_output}/spare_scores/combined_{dtype}_SPARE-{stype}.csv"
+        pred="../../data/{dir_output}/pred_test/combined_{dtype}_SPARE-{stype}.csv"
     output:
-        "../../data/{dir_output}/spare_scores/combined_{dtype}_SPARE-{stype}_eval.csv",
+        "../../data/{dir_output}/pred_eval/combined_{dtype}_SPARE-{stype}_eval.csv",
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/spare/util_eval_spare.py {input} {output}"
+        "python ../../utils/spare/util_eval_spare.py {input} {wildcards.stype} {output}"
+
+rule sparesvm_test_all:
+    '''
+    Test SPARE model using the split test sample
+    '''
+    input:
+        data="../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv",
+        mdl="../../data/{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
+    output:
+        "../../data/{dir_output}/out_data/combined_{dtype}_SPARE-{stype}.csv"
+    resources:
+        mem_mb=16000
+    shell:
+        "bash ../../utils/spare/util_spare_test.sh {input} {output}"
 

@@ -3,14 +3,13 @@ import numpy as np
 import sys
 from sklearn.metrics import roc_auc_score
 
-def eval_spare(in1_csv, in2_csv, out_csv):
+def eval_spare(in1_csv, in2_csv, target_var, out_csv):
     """
     Merge two input data files
     Output data includes an inner merge
     """
     
     key_var = 'MRID'
-    target_var = 'Target'
     pred_var = 'SPARE_score'
     
     # Read csv files
@@ -25,14 +24,14 @@ def eval_spare(in1_csv, in2_csv, out_csv):
     df_tmp = df1.merge(df2, on = key_var)
 
     # Calculate score
-    num_label = df1[target_var].unique().shape[0]
-    num_sample = df1.shape[0]
+    num_label = df_tmp[target_var].unique().shape[0]
+    num_sample = df_tmp.shape[0]
     v1 = np.array(df_tmp[target_var].astype(float))
     v2 = np.array(df_tmp[pred_var].astype(float))
     
     ## Classification metrics
     if num_label == 2:      
-        v2_bin = (v2>0.5).astype(float)
+        v2_bin = (v2>=0.5).astype(float)
         acc = float((v1==v2_bin).sum()) / num_sample
         
         auc = roc_auc_score(v1, v2)        
@@ -52,19 +51,20 @@ def eval_spare(in1_csv, in2_csv, out_csv):
 
 if __name__ == "__main__":
     # Access arguments from command line using sys.argv
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         print("Error: Please provide all required arguments")
         print("Usage: python eval_spare.py in1_csv.csv in2_csv.csv target_var out_csv.csv")
         sys.exit(1)
 
     in1_csv = sys.argv[1]
     in2_csv = sys.argv[2]
-    out_csv = sys.argv[3]
+    target_var = sys.argv[3]
+    out_csv = sys.argv[4]
 
     # Print run command
     print('About to run: ' + ' '.join(sys.argv))
 
     # Call the function
-    eval_spare(in1_csv, in2_csv, out_csv)
+    eval_spare(in1_csv, in2_csv, target_var, out_csv)
 
     print("Evaluation complete! Output file:", out_csv)

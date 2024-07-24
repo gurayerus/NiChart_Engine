@@ -9,7 +9,7 @@ sample_SPARE_Hypertension: vISTAG1/lists/samples/SPARE/sample_SPARE_Hypertension
 sample_SPARE_Obesity: vISTAG1/lists/samples/SPARE/sample_SPARE_Obesity_all.csv
 sample_SPARE_Smoking: vISTAG1/lists/samples/SPARE/sample_SPARE_Smoking_all.csv
 roi_types:
- - MUSE
+ - DLMUSE
 corr_types:
  - raw
 spare_types:
