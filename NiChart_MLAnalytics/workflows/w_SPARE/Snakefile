@@ -4,7 +4,7 @@ import os
 import sys
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-localrules: copy_config, select_vars, select_SPARE_sample, rename_target_var, split_train_test, copy_SPARE_model, eval_SPARE_scores
+localrules: copy_config, select_vars, select_SPARE_sample, rename_target_var, split_train_test, copy_SPARE_model, eval_SPARE_scores, sparesvm_test_all, sparesvm_merge_all
 
 ## Config file
 configfile: "../../config/vTest/config_SPARE.yaml"
@@ -27,8 +27,9 @@ OUT_RESULTS = expand("../../data/{dir_output}/out_data/combined_{dtype}_{ctype}_
 
 OUT_MODELS = expand("../../data/{dir_output}/out_models/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_Model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output)
 
-
 OUT_FILES = OUT_CONFIG + OUT_RESULTS + OUT_MODELS
+
+OUT_FILES = "../../data/vISTAG1/SPARE/out_data_all/combined_DLMUSE_raw_SPARE-ALL.csv"
 
 #print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 #input()
@@ -64,7 +65,7 @@ rule select_vars:
         dict_var = 'Code',
         covars ='MRID,Age,Sex,DLICV',
     output:
-        temp(f"../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv")
+        f"../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv"
     resources:
         mem_mb=8000
     shell:
@@ -151,7 +152,7 @@ rule sparesvm_test:
     resources:
         mem_mb=16000
     shell:
-        "bash ../../utils/spare/util_spare_test.sh {input} {output}"
+        "bash ../../utils/spare/util_spare_test.sh {input} {wildcards.stype} {output}"
 
 rule eval_SPARE_scores:
     '''
@@ -165,19 +166,37 @@ rule eval_SPARE_scores:
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/spare/util_eval_spare.py {input} {wildcards.stype} {output}"
+        "python ../../utils/spare/util_eval_spare.py {input} Target {output}"
 
 rule sparesvm_test_all:
     '''
     Test SPARE model using the split test sample
     '''
     input:
-        data="../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv",
+        data="../../data/{dir_output}/sel_vars/combined_{dtype}.csv",
         mdl="../../data/{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
     output:
         "../../data/{dir_output}/out_data/combined_{dtype}_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:
-        "bash ../../utils/spare/util_spare_test.sh {input} {output}"
+        "bash ../../utils/spare/util_spare_test.sh {input} {wildcards.stype} {output}"
+      
+def get_spare_results(wildcards):
+    data_spare=expand(f"../../data/{dir_output}/out_data/combined_{{dtype}}_{{ctype}}_COMBAT_SPARE-{{stype}}.csv", dtype = wildcards.dtype, ctype = wildcards.ctype, stype = config["spare_types"])
+    return data_spare
+
+rule sparesvm_merge_all:
+    '''
+    Merge SPARE scores
+    '''
+    input:
+        data=get_spare_results
+    output:
+        f"../../data/{dir_output}/out_data_all/combined_{{dtype}}_{{ctype}}_SPARE-ALL.csv"
+    resources:
+        mem_mb=16000
+    shell:
+        "python ../../utils/generic/util_merge_dfs_multi.py {output} MRID {input}"
+        
 

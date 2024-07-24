@@ -8,16 +8,32 @@ localrules: copy_config, select_vars, select_Centiles_sample, merge_rois, select
 #report: "report/workflow.rst"
 
 ## Config file
-configfile: "../../config/vTest/config_Centiles.yaml"
+#configfile: "../../config/vTest/config_Centiles.yaml"
+configfile: "../../config/vISTAG1/config_Centiles.yaml"
 
 ###################################
-## Out file names
+## Read config vars and lists
 
-OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"], config["list_ROIs"]], dir_output = config["dir_output"])
+dir_input_covar = config["version"] + "/prep_data/out_data"
+dir_input_data = config["version"] + "/COMBAT/out_data"
+dir_input_spare = config["version"] + "/SPARE/out_data_all"
+dir_output = config["version"] + "/Centiles"
+rois = config["list_ROIs"]
 
-OUT_RESULTS = expand("../../data/{dir_output}/final/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = config["dir_output"])
+###################################
+## Set out file names
+
+OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"], config["list_ROIs"]], dir_output = dir_output)
+
+OUT_RESULTS = expand("../../data/{dir_output}/final/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], dir_output = dir_output)
 
 OUT_FILES = OUT_CONFIG + OUT_RESULTS
+
+OUT_FILES = ["../../data/vISTAG1/Centiles/merged_vars/combined_DLMUSE_raw_selrois+spare.csv"]
+
+OUT_FILES = ["../../data/vISTAG1/Centiles/c_CN/data/combined_DLMUSE_raw_all.csv"]
+
+OUT_FILES = ["../../data/vISTAG1/Centiles/c_CN/centiles_single/combined_DLMUSE_raw_varMUSE_701.csv"]
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES) + '\n')
 
@@ -37,114 +53,112 @@ rule copy_config:
     input:
         "../../config/{cname}"
     output:
-        expand("../../data/{dir_output}/config/{{cname}}", dir_output = config["dir_output"])
+        f"../../data/{dir_output}/config/{{cname}}"
     shell:
         "cp -v {input} {output}"
-    
-rule select_vars:
+
+rule select_rois:
     '''
     Select variables from data
     '''
     input:
-        in_csv=expand("../../data/{dir_input}/final/combined_{{dtype}}.csv", dir_input = config["dir_input"]), 
+        in_csv=f"../../data/{dir_input_data}/combined_{{dtype}}_{{ctype}}_COMBAT.csv", 
         dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
     params:
         dict_var = 'Code',
-        covars ='MRID,Age,Sex,SITE,DLICV',
+        covars ='MRID',
     output:
-        "../../data/{dir_output}/sel_vars/combined_{dtype}.csv"
+        temp(f"../../data/{dir_output}/merged_vars/combined_{{dtype}}_{{ctype}}_selrois.csv")
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/util_select_vars.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
 
+rule merge_spare_to_rois:
+    '''
+    Select variables from data
+    '''
+    input:
+        in_csv1=f"../../data/{dir_output}/merged_vars/combined_{{dtype}}_{{ctype}}_selrois.csv",
+        in_csv2=f"../../data/{dir_input_spare}/combined_{{dtype}}_{{ctype}}_SPARE-ALL.csv", 
+    output:
+        "../../data/{dir_output}/merged_vars/combined_{dtype}_{ctype}_selrois+spare.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_merge_dfs.py {input} MRID {output}"
+
+def get_centiles_sample(wildcards):
+    path_centiles='../../config/' + config["sample_Centiles_" + wildcards.ctype]
+    return path_centiles
 
 rule select_Centiles_sample:
     '''
     Select MRID and Age for the specific centile sample
     '''
     input:
-        demog="../../data/data_prep/DLMUSE_raw/data_combined/NiChartData.csv",
-        sample="../../data/samples/sample_centiles_{ctype}_train.csv",
+        demog=f"../../data/{dir_input_covar}/combined_{{dtype}}_covars.csv",
+        sample=get_centiles_sample,
     output:
-        "../../data/centiles/c_{ctype}/data/sample.csv"
+        "../../data/{dir_output}/c_{ctype}/data/combined_{dtype}_covars.csv"
     params:
         in_vars = 'MRID,Age'
     shell:
-        "echo python utils/util_select_centile_sample.py {input} {params} {output}; "    
-        "python utils/util_select_centile_sample.py {input} {params} {output}"    
+        "python ../../utils/centiles/util_select_centile_sample.py {input} {params} {output}"    
 
-rule merge_rois:
+rule merge_data:
     '''
-    Merge SPARE sample to DLMUSE data
+    Merge data
     '''
     input:
-        sample="../../data/centiles/c_{ctype}/data/sample.csv",
-        data="../../data/data_consolidated/NiChartData_{dtype}.csv",
+        in_csv1=f"../../data/{dir_output}/c_{{centtype}}/data/combined_{{dtype}}_covars.csv",
+        in_csv2=f"../../data/{dir_output}/merged_vars/combined_{{dtype}}_{{ctype}}_selrois+spare.csv"
     output:
-        "../../data/centiles/c_{ctype}/data/NiChartData_{dtype}.csv"
-    params:
-        key_var = 'MRID'
+        f"../../data/{dir_output}/c_{{centtype}}/data/combined_{{dtype}}_{{ctype}}_all.csv"
+    resources:
+        mem_mb=8000
     shell:
-        "echo python utils/util_merge_two.py {input} {params} {output}; "
-        "python utils/util_merge_two.py {input} {params} {output}"
-
-rule select_rois:
-    '''
-    Select roi values
-    '''
-    input:
-        data="../../data/centiles/c_{ctype}/data/NiChartData_{dtype}.csv",
-        roi="../../config/list_MUSE_primaryROI.csv",
-    output:
-        "../../data/centiles/c_{ctype}/data_selrois/NiChartData_{dtype}.csv"
-    params:
-        in_vars = 'MRID,Age',
-    shell:
-        "python utils/util_select_vars.py {input} {params} {output}"    
+        "python ../../utils/generic/util_merge_dfs.py {input} MRID {output}"
     
 rule calc_centiles_single_var:
     input:
-        "../../data/centiles/c_{ctype}/data_selrois/NiChartData_{dtype}.csv"
+        f"../../data/{dir_output}/c_{{centtype}}/data/combined_{{dtype}}_{{ctype}}_all.csv"
     output:
-        temp("../../data/centiles/c_{ctype}/centiles_single/NiChartData_{dtype}_var{var}.csv")
+        temp(f"../../data/{dir_output}/c_{{centtype}}/centiles_single/combined_{{dtype}}_{{ctype}}_var{{cvar}}.csv")
     params:
         cent_vals='5,25,50,75,95',
         bin_size='1',
     shell:
-        "echo Rscript ./utils/util_calc_centiles.r -i {input} -o {output} "
-        "-t {wildcards.var} -c {params.cent_vals} -b {params.bin_size} -v; "
-        "Rscript ./utils/util_calc_centiles.r -i {input} -o {output} "
-        "-t {wildcards.var} -c {params.cent_vals} -b {params.bin_size} -v"
+        "bash ../../utils/centiles/util_calc_centiles_single.sh {input} {wildcards.cvar} {params} {output}"
 
-def get_centile_files(wildcards):
-    '''
-    Returns a list of centile csv files for all rois for a specific study
-    '''
-    cent_files = ['../../data/centiles/' + wildcards.ctype + '/centiles_per_roi/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_ROIS]
-    return cent_files
+#def get_centile_files(wildcards):
+    #'''
+    #Returns a list of centile csv files for all rois for a specific study
+    #'''
+    #cent_files = expand(f"../../data/{dir_output}/' + wildcards.ctype + '/centiles_per_roi/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_ROIS]
+    #return cent_files
 
-def get_centile_files_from_file(wildcards):
-    '''
-    Returns a list of centile csv files for all rois for a specific study
-    '''
-    list_in = '../../data/centiles/c_' + wildcards.ctype + '/data_selrois/NiChartData_' + wildcards.dtype + '.csv'
-    LIST_CURR_ROIS = pd.read_csv(list_in).columns[2:]
-    cent_files = ['../../data/centiles/c_' + wildcards.ctype + '/centiles_single/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_CURR_ROIS]
-    return cent_files
+#def get_centile_files_from_file(wildcards):
+    #'''
+    #Returns a list of centile csv files for all rois for a specific study
+    #'''
+    #list_in = '../../data/centiles/c_' + wildcards.ctype + '/data_selrois/NiChartData_' + wildcards.dtype + '.csv'
+    #LIST_CURR_ROIS = pd.read_csv(list_in).columns[2:]
+    #cent_files = ['../../data/centiles/c_' + wildcards.ctype + '/centiles_single/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_CURR_ROIS]
+    #return cent_files
 
-rule combine_centiles:
-    input:
-        get_centile_files_from_file
-    output:
-        protected("../../data/centiles/c_{ctype}/centiles_combined/NiChartData_{dtype}_centiles.csv")
-    shell:
-        "bash ./utils/util_combine_centiles.sh {output} {input}"
+#rule combine_centiles:
+    #input:
+        #get_centile_files_from_file
+    #output:
+        #protected("../../data/centiles/c_{ctype}/centiles_combined/NiChartData_{dtype}_centiles.csv")
+    #shell:
+        #"bash ./utils/util_combine_centiles.sh {output} {input}"
 
-rule copy_centiles:
-    input:
-        "../../data/centiles/centiles-{csample}_combined.csv"
-    output:
-        protected("../../models/centiles/centiles-{csample}_combined.csv")
-    shell:
-        "bash ./utils/util_combine_centiles.sh {output} {input}"
+##rule copy_centiles:
+    ##input:
+        ##"../../data/centiles/centiles-{csample}_combined.csv"
+    ##output:
+        ##protected("../../models/centiles/centiles-{csample}_combined.csv")
+    ##shell:
+        ##"bash ./utils/util_combine_centiles.sh {output} {input}"

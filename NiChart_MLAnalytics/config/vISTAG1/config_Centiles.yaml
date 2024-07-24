@@ -1,13 +1,10 @@
-version: vTest
-config_name: vTest/config_Centiles.yaml
-dir_input: vTest/prep_data
-dir_output: vTest/Centiles
-list_ROIs: vTest/lists/MUSE/list_MUSE_primary.csv
-sample_Centiles_train: vTest/lists/samples/Centiles/sample_Centiles_BLSA-SHIP_train.csv
-sample_Centiles_test: vTest/lists/samples/Centiles/sample_Centiles_BLSA-SHIP_test.csv
+version: vISTAG1
+config_name: vISTAG1/config_Centiles.yaml
+list_ROIs: vISTAG1/lists/MUSE/list_MUSE_primary.csv
+sample_Centiles_CN: vISTAG1/lists/samples/Centiles/sample_Centiles_BLSA-SHIP_train.csv
 roi_types:
  - MUSE
- #- DLMUSE
+ - DLMUSE
 corr_types:
  - raw
- #- normICV
+ - normICV
