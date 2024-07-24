@@ -2,8 +2,8 @@
 import pandas as pd
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-localrules: copy_config, select_vars, select_Centiles_sample, merge_rois, select_rois
-    
+localrules: copy_config, select_rois, merge_spare_to_rois, select_Centiles_sample, merge_data, combine_centiles
+
 ### Report data
 #report: "report/workflow.rst"
 
@@ -19,6 +19,12 @@ dir_input_data = config["version"] + "/COMBAT/out_data"
 dir_input_spare = config["version"] + "/SPARE/out_data_all"
 dir_output = config["version"] + "/Centiles"
 rois = config["list_ROIs"]
+spares = config["spare_types"]
+
+df_tmp = pd.read_csv("../../config/" + rois)
+LIST_ROIS = df_tmp['Code'].tolist()[1:]
+LIST_SPARE = ['SPARE' + x for x in spares]
+LIST_VAR = LIST_ROIS + LIST_SPARE
 
 ###################################
 ## Set out file names
@@ -34,6 +40,8 @@ OUT_FILES = ["../../data/vISTAG1/Centiles/merged_vars/combined_DLMUSE_raw_selroi
 OUT_FILES = ["../../data/vISTAG1/Centiles/c_CN/data/combined_DLMUSE_raw_all.csv"]
 
 OUT_FILES = ["../../data/vISTAG1/Centiles/c_CN/centiles_single/combined_DLMUSE_raw_varMUSE_701.csv"]
+
+OUT_FILES = ["../../data/vISTAG1/Centiles/c_CN/centiles_combined/combined_DLMUSE_raw_centiles.csv"]
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES) + '\n')
 
@@ -68,7 +76,7 @@ rule select_rois:
         dict_var = 'Code',
         covars ='MRID',
     output:
-        temp(f"../../data/{dir_output}/merged_vars/combined_{{dtype}}_{{ctype}}_selrois.csv")
+        f"../../data/{dir_output}/merged_vars/combined_{{dtype}}_{{ctype}}_selrois.csv"
     resources:
         mem_mb=8000
     shell:
@@ -124,41 +132,32 @@ rule calc_centiles_single_var:
     input:
         f"../../data/{dir_output}/c_{{centtype}}/data/combined_{{dtype}}_{{ctype}}_all.csv"
     output:
-        temp(f"../../data/{dir_output}/c_{{centtype}}/centiles_single/combined_{{dtype}}_{{ctype}}_var{{cvar}}.csv")
+        f"../../data/{dir_output}/c_{{centtype}}/centiles_single/combined_{{dtype}}_{{ctype}}_var{{cvar}}.csv"
     params:
         cent_vals='5,25,50,75,95',
         bin_size='1',
     shell:
         "bash ../../utils/centiles/util_calc_centiles_single.sh {input} {wildcards.cvar} {params} {output}"
 
-#def get_centile_files(wildcards):
-    #'''
-    #Returns a list of centile csv files for all rois for a specific study
-    #'''
-    #cent_files = expand(f"../../data/{dir_output}/' + wildcards.ctype + '/centiles_per_roi/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_ROIS]
-    #return cent_files
+def get_centile_files(wildcards):
+    '''
+    Returns a list of centile csv files for all rois for a specific study
+    '''
+    cent_files = expand(f"../../data/{dir_output}/c_{wildcards.centtype}/centiles_single/combined_{wildcards.dtype}_{wildcards.ctype}_var{{cvar}}.csv", cvar = LIST_VAR)
+    return cent_files
 
-#def get_centile_files_from_file(wildcards):
-    #'''
-    #Returns a list of centile csv files for all rois for a specific study
-    #'''
-    #list_in = '../../data/centiles/c_' + wildcards.ctype + '/data_selrois/NiChartData_' + wildcards.dtype + '.csv'
-    #LIST_CURR_ROIS = pd.read_csv(list_in).columns[2:]
-    #cent_files = ['../../data/centiles/c_' + wildcards.ctype + '/centiles_single/NiChartData_' + wildcards.dtype + '_var' + x + '.csv' for x in LIST_CURR_ROIS]
-    #return cent_files
+rule combine_centiles:
+    input:
+        get_centile_files
+    output:
+        f"../../data/{dir_output}/c_{{centtype}}/centiles_combined/combined_{{dtype}}_{{ctype}}_centiles.csv"
+    shell:
+        "bash ../../utils/centiles/util_combine_centiles.sh {output} {input}"
 
-#rule combine_centiles:
-    #input:
-        #get_centile_files_from_file
-    #output:
-        #protected("../../data/centiles/c_{ctype}/centiles_combined/NiChartData_{dtype}_centiles.csv")
-    #shell:
-        #"bash ./utils/util_combine_centiles.sh {output} {input}"
-
-##rule copy_centiles:
-    ##input:
-        ##"../../data/centiles/centiles-{csample}_combined.csv"
-    ##output:
-        ##protected("../../models/centiles/centiles-{csample}_combined.csv")
-    ##shell:
-        ##"bash ./utils/util_combine_centiles.sh {output} {input}"
+###rule copy_centiles:
+    ###input:
+        ###"../../data/centiles/centiles-{csample}_combined.csv"
+    ###output:
+        ###protected("../../models/centiles/centiles-{csample}_combined.csv")
+    ###shell:
+        ###"bash ./utils/util_combine_centiles.sh {output} {input}"

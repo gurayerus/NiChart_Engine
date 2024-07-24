@@ -13,5 +13,5 @@ echo "About to run: $cmd"
 $cmd
 
 ## Change column name, remove first (index) column
-sed "s/SPARE_score/SPARE-${stype}/g" ${out_csv%.csv}_tmpout.csv | cut -d, -f2- > $out_csv
+sed "s/SPARE_score/SPARE${stype}/g" ${out_csv%.csv}_tmpout.csv | cut -d, -f2- > $out_csv
 rm -rf ${out_csv%.csv}_tmpout.csv

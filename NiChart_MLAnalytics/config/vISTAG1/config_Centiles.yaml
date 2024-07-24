@@ -8,3 +8,12 @@ roi_types:
 corr_types:
  - raw
  - normICV
+spare_types:
+ - AD
+ - Age
+ - Diabetes
+ - Hyperlipidemia
+ - Hypertension
+ - Obesity
+ - Smoking
+ 
