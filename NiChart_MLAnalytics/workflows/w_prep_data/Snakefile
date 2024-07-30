@@ -9,7 +9,7 @@ localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_dat
 
 ## Config file
 configfile: "../../config/vTest/config_prep_data.yaml"
-configfile: "../../config/vISTAG1/config_prep_data.yaml"
+##configfile: "../../config/vISTAG1/config_prep_data.yaml"
 
 ###################################
 ## Read config vars and lists
