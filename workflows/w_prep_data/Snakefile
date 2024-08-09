@@ -7,32 +7,38 @@ localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_dat
 ### Report data
 #report: "report/workflow.rst"
 
-## Config file
-configfile: "../../config/vTest/config_prep_data.yaml"
-##configfile: "../../config/vISTAG1/config_prep_data.yaml"
+###################################
+## Default config file 
+## Runs the workflow with the test dataset
+## Edit this for running it on other datasets
+in_config = "../../config/vTest/config_prep_data.yaml"
+configfile: f"{in_config}"
+###################################
 
 ###################################
 ## Read config vars and lists
 
 dir_input = config["dir_input"]
-dir_output = config["version"] + "/prep_data"
+dir_output = config["dir_output"]
 rois = config["list_ROIs"]
 covars = config["list_covars"]
+corr_type = config["corr_type"]
 
-df = pd.read_csv("../../config/" + config["list_studies_merge"])
+df = pd.read_csv("../../" + config["list_studies_merge"])
 LIST_STUDIES = df.Study.tolist()
 
 
 ###################################
-## Set out file names
+## Set output file names
 
-OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"],  config["list_covars"], config["list_ROIs"], config["list_studies_merge"]], dir_output = dir_output)
+OUT_CONFIG = f"../../{dir_output}/config/config_prep_data.yaml"
 
-OUT_RESULTS = expand("../../data/{dir_output}/out_data/combined_{dtype}_{ctype}.csv", dtype = config["roi_types"], ctype = ['covars'] + config["corr_types"], dir_output = dir_output)
+OUT_RESULTS = expand(f"../../{dir_output}/out_data_na_removed/combined_{{rtype}}_{{dtype}}.csv", rtype = config["roi_types"], dtype = ['covars', 'raw', corr_type])
 
-OUT_FILES = OUT_CONFIG + OUT_RESULTS
+OUT_FILES = [OUT_CONFIG] + OUT_RESULTS
 
 print("Target out files:" + '\n' + '\n'.join(OUT_FILES) + '\n')
+#input()
 
 ###################################
 ## Rules
@@ -48,101 +54,40 @@ rule copy_config:
     Rule for copying config files to output dir
     '''
     input:
-        "../../config/{cname}"
+        f"{in_config}"
     output:
-        f"../../data/{dir_output}/config/{{cname}}"
+        f"{OUT_CONFIG}"
     shell:
         "cp -v {input} {output}"
-    
-rule make_sample_list:
-    '''
-    Rule for selecting a smaller subset of a study dataset
-    '''
-    input:
-        f"../../data/{dir_input}/Studies/{{study}}/{{study}}_DLMUSE.csv"
-    output:
-        f"../../data/{dir_output}/subsampled/{{study}}-n{{num_sample}}/sample_{{study}}-n{{num_sample}}.csv"
-    params:
-        random_state = '42',
-        out_vars = 'MRID',
-    shell:
-        "python ../../utils/generic/util_subsample_df.py {input} {wildcards.num_sample} {params} {output}"
-
-rule select_sample:
-    '''
-    Rule for creating data files with the selected sample
-    '''
-    input:
-        in_csv=f"../../data/{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv",
-        in_list=f"../../data/{dir_output}/subsampled/{{study}}-n{{num_sample}}/sample_{{study}}-n{{num_sample}}.csv"
-    output:
-        temp(f"../../data/{dir_output}/subsampled/{{study}}-n{{num_sample}}/{{study}}-n{{num_sample}}_{{dtype}}.csv")
-    params:
-        key_var = 'MRID'
-    shell:
-        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
     
 rule rename_rois:
     '''
     Rename MUSE roi indices to roi codes
     '''
     input:
-        roi=f"../../data/{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv",
-        dict=f"../../config/{rois}"
+        roi=f"../../{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv",
+        dict=f"../../{rois}"
     output:
-        temp(f"../../data/{dir_output}/renamed/{{study}}_{{dtype}}.csv")
+        temp(f"../../{dir_output}/renamed/{{study}}_{{dtype}}.csv")
     params:
         var_from = 'Index',
         var_to = 'Code'
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/generic/util_rename_df_columns.py {input} {params} {output}"
+        "python ../../utils/generic/util_rename_columns_using_dict.py {input} {params} {output}"
 
 rule merge_data:
     '''
     Merge demog data to ROIs
     '''
     input:
-        demog=f"../../data/{dir_input}/Studies/{{study}}/{{study}}_DemogClin.csv",
-        roi=f"../../data/{dir_output}/renamed/{{study}}_{{dtype}}.csv"
+        demog=f"../../{dir_input}/Studies/{{study}}/{{study}}_DemogClin.csv",
+        roi=f"../../{dir_output}/renamed/{{study}}_{{dtype}}.csv"
     params:
         key_var = 'MRID'
     output:
-        temp(f"../../data/{dir_output}/merged/{{study}}_{{dtype}}.csv")
-    resources:
-        mem_mb=8000
-    shell:
-        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
-
-rule rename_rois_subsampled:
-    '''
-    Rename MUSE roi indices to roi codes for subsampled studies
-    '''
-    input:
-        roi=f"../../data/{dir_output}/subsampled/{{study}}/{{study}}_{{dtype}}.csv",
-        dict=f"../../config/{rois}"
-    output:
-        temp(f"../../data/{dir_output}/renamed/{{study}}_{{dtype}}.csv")
-    params:
-        var_from = 'Index',
-        var_to = 'Code'
-    resources:
-        mem_mb=8000
-    shell:
-        "python ../../utils/generic/util_rename_df_columns.py {input} {params} {output}"
-
-rule merge_data_subsampled:
-    '''
-    Merge demog data to ROIs for subsampled studies
-    '''
-    input:
-        demog=f"../../data/{dir_output}/subsampled/{{study}}/{{study}}_DemogClin.csv",
-        roi=f"../../data/{dir_output}/renamed/{{study}}_{{dtype}}.csv"
-    params:
-        key_var = 'MRID'
-    output:
-        temp(f"../../data/{dir_output}/merged/{{study}}_{{dtype}}.csv")
+        temp(f"../../{dir_output}/merged/{{study}}_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -153,11 +98,11 @@ rule concat_studies:
     Combine studies into a single csv
     '''
     input:
-        expand("../../data/{dir_output}/merged/{study}_{{dtype}}.csv", dir_output = dir_output, study=LIST_STUDIES)
+        expand("../../{dir_output}/merged/{study}_{{dtype}}.csv", dir_output = dir_output, study=LIST_STUDIES)
     params:
         key_var = 'MRID'
     output:
-        temp(f"../../data/{dir_output}/combined/combined_{{dtype}}.csv")
+        temp(f"../../{dir_output}/combined/combined_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -168,29 +113,26 @@ rule qc_ROIs:
     Discard QC fail cases based on distributions
     '''
     input:
-        f"../../data/{dir_output}/combined/combined_{{dtype}}.csv"
+        f"../../{dir_output}/combined/combined_{{dtype}}.csv"
     output:
-        temp(f"../../data/{dir_output}/qced/combined_{{dtype}}.csv")
+        temp(f"../../{dir_output}/qced/combined_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
         "python ../../utils/generic/util_qc_ROIs.py {input} {output}"
-
-
-ruleorder: select_covars > correct_icv
 
 rule select_covars:
     '''
     Select variables from data
     '''
     input:
-        in_csv=f"../../data/{dir_output}/qced/combined_{{dtype}}.csv",
-        dict_csv=f"../../config/{covars}"
+        in_csv=f"../../{dir_output}/qced/combined_{{dtype}}.csv",
+        dict_csv=f"../../{covars}"
     params:
         dict_var = 'Name',
         vars_list = 'MRID',
     output:
-        temp(f"../../data/{dir_output}/split_tables/combined_{{dtype}}_covars.csv")
+        temp(f"../../{dir_output}/out_data/combined_{{dtype}}_covars.csv")
     resources:
         mem_mb=8000
     shell:
@@ -201,13 +143,13 @@ rule select_roi_vars:
     Select variables from data
     '''
     input:
-        in_csv=f"../../data/{dir_output}/qced/combined_{{dtype}}.csv",
-        dict=f"../../config/{rois}"
+        in_csv=f"../../{dir_output}/qced/combined_{{dtype}}.csv",
+        dict=f"../../{rois}"
     params:
         dict_var = 'Code',
         vars_list = 'MRID',
     output:
-        temp(f"../../data/{dir_output}/split_tables/combined_{{dtype}}_raw.csv")
+        temp(f"../../{dir_output}/out_data/combined_{{dtype}}_raw.csv")
     resources:
         mem_mb=8000
     shell:
@@ -218,26 +160,25 @@ rule correct_icv:
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        f"../../data/{dir_output}/split_tables/combined_{{dtype}}_raw.csv"
+        f"../../{dir_output}/out_data/combined_{{dtype}}_raw.csv"
     params:
         icv_var = 'MUSE_702',
         exclude_vars = 'MRID',
-        suffix = 'NONE'
     output:
-        temp(f"../../data/{dir_output}/split_tables/combined_{{dtype}}_{{corr_type}}.csv")
+        temp(f"../../{dir_output}/out_data/combined_{{dtype}}_{corr_type}.csv")
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/generic/util_corr_icv.py {input} {wildcards.corr_type} {params} {output}"
+        f"python ../../utils/generic/util_corr_icv.py {{input}} {corr_type} {{params}} {{output}}"
 
 rule drop_na:
     '''
     Drop NAs in final data
     '''
     input:
-        f"../../data/{dir_output}/split_tables/combined_{{dtype}}.csv"
+        f"../../{dir_output}/out_data/combined_{{dtype}}.csv"
     output:
-        f"../../data/{dir_output}/out_data/combined_{{dtype}}.csv"
+        f"../../{dir_output}/out_data_na_removed/combined_{{dtype}}.csv"
     resources:
         mem_mb=8000
     shell:

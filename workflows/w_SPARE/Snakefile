@@ -6,30 +6,35 @@ import sys
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
 localrules: copy_config, select_vars, select_SPARE_sample, rename_target_var, split_train_test, copy_SPARE_model, eval_SPARE_scores, sparesvm_test_all, sparesvm_merge_all
 
-## Config file
-configfile: "../../config/vTest/config_SPARE.yaml"
-configfile: "../../config/vISTAG1/config_SPARE.yaml"
+###################################
+## Default config file 
+## Runs the workflow with the test dataset
+## Edit this for running it on other datasets
+in_config = "../../config/vTest/config_SPARE.yaml"
+configfile: f"{in_config}"
+###################################
 
 ###################################
 ## Read config vars and lists
 
-dir_input_covar = config["version"] + "/prep_data/out_data"
-dir_input_data = config["version"] + "/COMBAT/out_data"
-dir_output = config["version"] + "/SPARE"
+dir_input = config["dir_input"]
+dir_output = config["dir_output"]
+dir_input_covar = dir_input + "/prep_data/out_data"
+dir_input_data = dir_input + "/COMBAT/out_data"
 rois = config["list_ROIs"]
 
 ###################################
 ## Set out file names
 
-OUT_CONFIG = expand("../../data/{dir_output}/config/{cname}", cname = [config["config_name"], config["sample_SPARE_AD"], config["sample_SPARE_Age"], config["list_ROIs"]], dir_output = dir_output)
+OUT_CONFIG = f"../../{dir_output}/config/config_COMBAT.yaml"
 
-OUT_RESULTS = expand("../../data/{dir_output}/out_data/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output) + expand("../../data/{dir_output}/pred_eval/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_eval.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output)
+OUT_RESULTS = expand("../../{dir_output}/out_data/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output) + expand("../../{dir_output}/pred_eval/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_eval.csv", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output)
 
-OUT_MODELS = expand("../../data/{dir_output}/out_models/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_Model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output)
+OUT_MODELS = expand("../../{dir_output}/out_models/combined_{dtype}_{ctype}_COMBAT_SPARE-{stype}_Model.pkl.gz", dtype = config["roi_types"], ctype = config["corr_types"], stype = config["spare_types"], dir_output = dir_output)
 
-OUT_FILES = OUT_CONFIG + OUT_RESULTS + OUT_MODELS
+OUT_FILES = [OUT_CONFIG] + OUT_RESULTS + OUT_MODELS
 
-OUT_FILES = "../../data/vISTAG1/SPARE/out_data_all/combined_DLMUSE_raw_SPARE-ALL.csv"
+#OUT_FILES = "../../data/vISTAG1/SPARE/out_data_all/combined_DLMUSE_raw_SPARE-ALL.csv"
 
 #print("Target out files:" + '\n' + '\n'.join(OUT_FILES))
 #input()
@@ -48,9 +53,9 @@ rule copy_config:
     Rule for copying config files to output dir
     '''
     input:
-        "../../config/{cname}"
+        f"{in_config}"
     output:
-        f"../../data/{dir_output}/config/{{cname}}"
+        f"{OUT_CONFIG}"
     shell:
         "cp -v {input} {output}"
 
@@ -59,13 +64,13 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv=f"../../data/{dir_input_data}/combined_{{dtype}}.csv",
+        in_csv=f"../../{dir_input_data}/combined_{{dtype}}.csv",
         dict_csv=f"../../config/{rois}"
     params:
         dict_var = 'Code',
         covars ='MRID,Age,Sex,DLICV',
     output:
-        f"../../data/{dir_output}/sel_vars/combined_{{dtype}}.csv"
+        f"../../{dir_output}/sel_vars/combined_{{dtype}}.csv"
     resources:
         mem_mb=8000
     shell:
@@ -81,11 +86,11 @@ rule select_SPARE_sample:
     '''
     input:
         sample=get_spare_sample,
-        data="../../data/{dir_output}/sel_vars/combined_{dtype}.csv",
+        data="../../{dir_output}/sel_vars/combined_{dtype}.csv",
     params:
         key_var = 'MRID'
     output:
-        temp("../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all.csv")
+        temp("../../{dir_output}/sel_sample/{stype}/combined_{dtype}_all.csv")
     resources:
         mem_mb=8000
     shell:
@@ -96,12 +101,12 @@ rule rename_target_var:
     Rename the name of the second var to target
     '''
     input:
-        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all.csv"
+        "../../{dir_output}/sel_sample/{stype}/combined_{dtype}_all.csv"
     params:
         num_col = '1',
         name_col = 'Target'
     output:
-        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv"
+        "../../{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv"
     resources:
         mem_mb=8000
     shell:
@@ -112,13 +117,13 @@ rule split_train_test:
     Split spare sample all to train test
     '''
     input:
-        "../../data/{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv"
+        "../../{dir_output}/sel_sample/{stype}/combined_{dtype}_all_renamed.csv"
     params:
         strat_vars = 'Sex,Target',
         test_ratio = '0.4'
     output:
-        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_train.csv",
-        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
+        "../../{dir_output}/train_test/{stype}/combined_{dtype}_train.csv",
+        "../../{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
     resources:
         mem_mb=8000
     shell:
@@ -129,12 +134,12 @@ rule sparesvm_train:
     Train SPARE model
     '''
     input:
-        "../../data/{dir_output}/train_test/{stype}/combined_{dtype}_train.csv"
+        "../../{dir_output}/train_test/{stype}/combined_{dtype}_train.csv"
     params:
         vkey='MRID',
         target = 'Target'
     output:
-        "../../data/{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
+        "../../{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
     resources:
         mem_mb=16000
     shell:
@@ -145,10 +150,10 @@ rule sparesvm_test:
     Test SPARE model using the split test sample
     '''
     input:
-        data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
-        mdl="../../data/{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
+        data="../../{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
+        mdl="../../{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
     output:
-        "../../data/{dir_output}/pred_test/combined_{dtype}_SPARE-{stype}.csv"
+        "../../{dir_output}/pred_test/combined_{dtype}_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:
@@ -159,10 +164,10 @@ rule eval_SPARE_scores:
     Evaluate accuracy on test sample
     '''
     input:
-        data="../../data/{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
-        pred="../../data/{dir_output}/pred_test/combined_{dtype}_SPARE-{stype}.csv"
+        data="../../{dir_output}/train_test/{stype}/combined_{dtype}_test.csv",
+        pred="../../{dir_output}/pred_test/combined_{dtype}_SPARE-{stype}.csv"
     output:
-        "../../data/{dir_output}/pred_eval/combined_{dtype}_SPARE-{stype}_eval.csv",
+        "../../{dir_output}/pred_eval/combined_{dtype}_SPARE-{stype}_eval.csv",
     resources:
         mem_mb=8000
     shell:
@@ -173,17 +178,17 @@ rule sparesvm_test_all:
     Test SPARE model using the split test sample
     '''
     input:
-        data="../../data/{dir_output}/sel_vars/combined_{dtype}.csv",
-        mdl="../../data/{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
+        data="../../{dir_output}/sel_vars/combined_{dtype}.csv",
+        mdl="../../{dir_output}/out_models/combined_{dtype}_SPARE-{stype}_Model.pkl.gz"
     output:
-        "../../data/{dir_output}/out_data/combined_{dtype}_SPARE-{stype}.csv"
+        "../../{dir_output}/out_data/combined_{dtype}_SPARE-{stype}.csv"
     resources:
         mem_mb=16000
     shell:
         "bash ../../utils/spare/util_spare_test.sh {input} {wildcards.stype} {output}"
       
 def get_spare_results(wildcards):
-    data_spare=expand(f"../../data/{dir_output}/out_data/combined_{{dtype}}_{{ctype}}_COMBAT_SPARE-{{stype}}.csv", dtype = wildcards.dtype, ctype = wildcards.ctype, stype = config["spare_types"])
+    data_spare=expand(f"../../{dir_output}/out_data/combined_{{dtype}}_{{ctype}}_COMBAT_SPARE-{{stype}}.csv", dtype = wildcards.dtype, ctype = wildcards.ctype, stype = config["spare_types"])
     return data_spare
 
 rule sparesvm_merge_all:
@@ -193,7 +198,7 @@ rule sparesvm_merge_all:
     input:
         data=get_spare_results
     output:
-        f"../../data/{dir_output}/out_data_all/combined_{{dtype}}_{{ctype}}_SPARE-ALL.csv"
+        f"../../{dir_output}/out_data_all/combined_{{dtype}}_{{ctype}}_SPARE-ALL.csv"
     resources:
         mem_mb=16000
     shell:
