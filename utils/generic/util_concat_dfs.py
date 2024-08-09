@@ -9,24 +9,35 @@ def concat_dfs(out_csv, list_in_csv):
     list_df = []
     col_common = []
     for i, in_csv in enumerate(list_in_csv):
-        # Read csv files
-        df_tmp = pd.read_csv(in_csv, dtype = {'MRID':str})
-        list_df.append(df_tmp)
+        try:
+            # Read csv files
+            df_tmp = pd.read_csv(in_csv, dtype = {'MRID':str})
+            list_df.append(df_tmp)
 
-        # Detect common columns
-        col_tmp = df_tmp.columns
-        if i == 0:
-            col_common = df_tmp.columns.tolist()
-        col_common = [x for x in df_tmp.columns if x in col_common]
+            # Detect common columns
+            col_tmp = df_tmp.columns
+            if col_common == []:
+                col_common = df_tmp.columns.tolist()
+            col_common = [x for x in df_tmp.columns if x in col_common]
+             
+        except:
+            print('Warning: Could not read csv file, skipping: ' + in_csv)
 
-    # Concat data
-    df_out = pd.concat(list_df)
+    try:
+        # Concat data
+        df_out = pd.concat(list_df)
 
-    # Select common columns
-    df_out = df_out[col_common]
+        # Select common columns
+        df_out = df_out[col_common]
 
-    # Write out file
-    df_out.to_csv(out_csv, index=False)
+        # Write out file
+        df_out.to_csv(out_csv, index=False)
+        
+        print("Concatation complete! Output file:", out_csv)
+        
+    except:
+        print('Error: Concatation failed')
+
 
 if __name__ == "__main__":
     # Access arguments from command line using sys.argv
@@ -43,5 +54,3 @@ if __name__ == "__main__":
 
     # Call the function
     concat_dfs(out_csv, list_in_csv)
-
-    print("Concat complete! Output file:", out_csv)

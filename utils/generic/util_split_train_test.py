@@ -4,8 +4,7 @@ import sys
 
 def split_train_test(in_csv, strat_vars, test_ratio, out_train, out_test):
     """
-    Merge two input data files
-    Output data includes an inner merge
+    Split data into train/test
     """
     
     ## Read data

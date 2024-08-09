@@ -4,7 +4,7 @@ import sys
 def merge_data(out_csv, key_var, list_in_csv):
     """
     Merge multiple input data files
-    Output data includes an inner merge
+    Using an inner merge
     """
     
     df_out = pd.read_csv(list_in_csv[0], dtype = {'MRID':str})

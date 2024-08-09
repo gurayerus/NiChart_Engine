@@ -3,7 +3,7 @@ import argparse
 import json
 import sys
 
-def rename_df_columns(in_csv, in_dict, var_from, var_to, out_csv):
+def rename_columns_using_dict(in_csv, in_dict, var_from, var_to, out_csv):
 
     """
     Rename columns of input csv using the dictionary
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # Access arguments from command line using sys.argv
     if len(sys.argv) != 6:
         print("Error: Please provide all required arguments")
-        print("Usage: python rename_df_columns.py in_csv.csv in_dict.csv out_csv.csv")
+        print("Usage: python rename_columns_using_dict.py in_csv.csv in_dict.csv out_csv.csv")
         sys.exit(1)
 
     in_csv = sys.argv[1]
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     print('About to run: ' + ' '.join(sys.argv))    
 
     # Call the function
-    rename_df_columns(in_csv, in_dict, var_from, var_to, out_csv)
+    rename_columns_using_dict(in_csv, in_dict, var_from, var_to, out_csv)
 
     print("Renaming of columns complete! Output file:", out_csv)
 

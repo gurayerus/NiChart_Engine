@@ -1,6 +1,8 @@
 version: vTest
-config_name: vTest/config_COMBAT.yaml
+dir_input: output/vTest/prep_data/out_data_na_removed
+dir_output: output/vTest/COMBAT
 list_ROIs: vTest/lists/MUSE/list_MUSE_short.csv
+list_derived_ROIs: vISTAG1/lists/MUSE/list_MUSE_mapping_derived.csv
 sample_COMBAT_train: vTest/lists/samples/COMBAT/sample_COMBAT_ISTAG_train.csv
 sample_COMBAT_test: vTest/lists/samples/COMBAT/sample_COMBAT_ISTAG_all.csv
 roi_types:

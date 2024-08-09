@@ -7,6 +7,9 @@ def select_vars(in_csv, dict_csv, dict_var, vars_list, out_csv):
 
     """
     Select variables from data file
+    Variables are provided as a combination of 
+    - variables from a dictionary (e.g. for ROI names)
+    - and a comma separated list of var names (e.g. for other variables, Age,Sex,etc)
     """
     
     # Read input files

@@ -2,7 +2,7 @@ import pandas as pd
 import argparse
 import sys
 
-def filter_var(in_csv, var_name, min_val, max_val, out_csv):
+def filter_var_minmax(in_csv, var_name, min_val, max_val, out_csv):
     """
     Filter df based on range of values for the variable
     """
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     # Access arguments from command line using sys.argv
     if len(sys.argv) != 6:
         print("Error: Please provide all required arguments")
-        print("Usage: python filter_var.py in_csv.csv var_name min_val max_val out_csv.csv")
+        print("Usage: python filter_var_minmax.py in_csv.csv var_name min_val max_val out_csv.csv")
         sys.exit(1)
 
     in_csv = sys.argv[1]
@@ -34,6 +34,6 @@ if __name__ == "__main__":
     print('About to run: ' + ' '.join(sys.argv))
 
     # Call the function
-    filter_var(in_csv, var_name, min_val, max_val, out_csv)
+    filter_var_minmax(in_csv, var_name, min_val, max_val, out_csv)
 
     print("ROI QC complete! Output file:", out_csv)
