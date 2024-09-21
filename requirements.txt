@@ -1,0 +1,20 @@
+# NiChart packages
+spare-scores
+NiChartHarmonize
+
+# general python dependencies
+argparse
+nibabel
+mamba
+snakemake
+pulp==2.7.0
+tabulate==0.8.10
+sphinx
+
+
+# streamlit
+st_pages==1.0.1
+streamlit_plotly_events
+chart_studio
+Jinja2
+plotly-express
