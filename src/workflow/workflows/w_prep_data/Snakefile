@@ -2,7 +2,7 @@
 import pandas as pd
 
 ## Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
-localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_data, rename_rois_subsampled, merge_data_subsampled, concat_studies, select_covars, select_roi_vars, correct_icv
+##localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_data, rename_rois_subsampled, merge_data_subsampled, concat_studies, select_covars, select_roi_vars, correct_icv
 
 ### Report data
 #report: "report/workflow.rst"
@@ -31,9 +31,9 @@ LIST_STUDIES = df.Study.tolist()
 ###################################
 ## Set output file names
 
-OUT_CONFIG = f"../../{dir_output}/config/config_prep_data.yaml"
+OUT_CONFIG = f"../../../../{dir_output}/config/config_prep_data.yaml"
 
-OUT_RESULTS = expand(f"../../{dir_output}/out_data_na_removed/combined_{{rtype}}_{{dtype}}.csv", rtype = config["roi_types"], dtype = ['covars', 'raw', corr_type])
+OUT_RESULTS = expand(f"../../../../{dir_output}/out_data_na_removed/combined_{{rtype}}_{{dtype}}.csv", rtype = config["roi_types"], dtype = ['covars', 'raw', corr_type])
 
 OUT_FILES = [OUT_CONFIG] + OUT_RESULTS
 
@@ -65,10 +65,10 @@ rule rename_rois:
     Rename MUSE roi indices to roi codes
     '''
     input:
-        roi=f"../../{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv",
+        roi=f"../../../../{dir_input}/Studies/{{study}}/{{study}}_{{dtype}}.csv",
         dict=f"../../{rois}"
     output:
-        temp(f"../../{dir_output}/renamed/{{study}}_{{dtype}}.csv")
+        temp(f"../../../../{dir_output}/renamed/{{study}}_{{dtype}}.csv")
     params:
         var_from = 'Index',
         var_to = 'Code'
@@ -82,12 +82,12 @@ rule merge_data:
     Merge demog data to ROIs
     '''
     input:
-        demog=f"../../{dir_input}/Studies/{{study}}/{{study}}_DemogClin.csv",
-        roi=f"../../{dir_output}/renamed/{{study}}_{{dtype}}.csv"
+        demog=f"../../../../{dir_input}/Studies/{{study}}/{{study}}_DemogClin.csv",
+        roi=f"../../../../{dir_output}/renamed/{{study}}_{{dtype}}.csv"
     params:
         key_var = 'MRID'
     output:
-        temp(f"../../{dir_output}/merged/{{study}}_{{dtype}}.csv")
+        temp(f"../../../../{dir_output}/merged/{{study}}_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -98,11 +98,11 @@ rule concat_studies:
     Combine studies into a single csv
     '''
     input:
-        expand("../../{dir_output}/merged/{study}_{{dtype}}.csv", dir_output = dir_output, study=LIST_STUDIES)
+        expand("../../../../{dir_output}/merged/{study}_{{dtype}}.csv", dir_output = dir_output, study=LIST_STUDIES)
     params:
         key_var = 'MRID'
     output:
-        temp(f"../../{dir_output}/combined/combined_{{dtype}}.csv")
+        temp(f"../../../../{dir_output}/combined/combined_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -113,9 +113,9 @@ rule qc_ROIs:
     Discard QC fail cases based on distributions
     '''
     input:
-        f"../../{dir_output}/combined/combined_{{dtype}}.csv"
+        f"../../../../{dir_output}/combined/combined_{{dtype}}.csv"
     output:
-        temp(f"../../{dir_output}/qced/combined_{{dtype}}.csv")
+        temp(f"../../../../{dir_output}/qced/combined_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -126,13 +126,13 @@ rule select_covars:
     Select variables from data
     '''
     input:
-        in_csv=f"../../{dir_output}/qced/combined_{{dtype}}.csv",
+        in_csv=f"../../../../{dir_output}/qced/combined_{{dtype}}.csv",
         dict_csv=f"../../{covars}"
     params:
         dict_var = 'Name',
         vars_list = 'MRID',
     output:
-        temp(f"../../{dir_output}/out_data/combined_{{dtype}}_covars.csv")
+        temp(f"../../../../{dir_output}/out_data/combined_{{dtype}}_covars.csv")
     resources:
         mem_mb=8000
     shell:
@@ -143,13 +143,13 @@ rule select_roi_vars:
     Select variables from data
     '''
     input:
-        in_csv=f"../../{dir_output}/qced/combined_{{dtype}}.csv",
+        in_csv=f"../../../../{dir_output}/qced/combined_{{dtype}}.csv",
         dict=f"../../{rois}"
     params:
         dict_var = 'Code',
         vars_list = 'MRID',
     output:
-        temp(f"../../{dir_output}/out_data/combined_{{dtype}}_raw.csv")
+        temp(f"../../../../{dir_output}/out_data/combined_{{dtype}}_raw.csv")
     resources:
         mem_mb=8000
     shell:
@@ -160,12 +160,12 @@ rule correct_icv:
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        f"../../{dir_output}/out_data/combined_{{dtype}}_raw.csv"
+        f"../../../../{dir_output}/out_data/combined_{{dtype}}_raw.csv"
     params:
         icv_var = 'MUSE_702',
         exclude_vars = 'MRID',
     output:
-        temp(f"../../{dir_output}/out_data/combined_{{dtype}}_{corr_type}.csv")
+        temp(f"../../../../{dir_output}/out_data/combined_{{dtype}}_{corr_type}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -176,9 +176,9 @@ rule drop_na:
     Drop NAs in final data
     '''
     input:
-        f"../../{dir_output}/out_data/combined_{{dtype}}.csv"
+        f"../../../../{dir_output}/out_data/combined_{{dtype}}.csv"
     output:
-        f"../../{dir_output}/out_data_na_removed/combined_{{dtype}}.csv"
+        f"../../../../{dir_output}/out_data_na_removed/combined_{{dtype}}.csv"
     resources:
         mem_mb=8000
     shell:
