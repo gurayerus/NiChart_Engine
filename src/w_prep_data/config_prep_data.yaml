@@ -1,7 +1,0 @@
-list_covars: resources/lists/covars/list_covar_all.csv
-list_ROIs: resources/dictionaries/MUSE/list_MUSE_all.csv
-list_studies_merge: resources/lists/studies/list_studies_ISTAGING.csv
-roi_types:
- - MUSE
- - DLMUSE
-corr_type: normICV

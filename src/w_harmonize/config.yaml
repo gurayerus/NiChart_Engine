@@ -1,0 +1,6 @@
+list_covars: lists/covars/list_covar_all.csv
+list_ROIs: dictionaries/MUSE/list_MUSE_single.csv
+list_derived_ROIs: dictionaries/MUSE/list_MUSE_mapping_derived.csv
+sample_COMBAT_train: lists/samples/COMBAT/sample_COMBAT_ISTAG_train.csv
+sample_COMBAT_test: lists/samples/COMBAT/sample_COMBAT_ISTAG_all.csv
+

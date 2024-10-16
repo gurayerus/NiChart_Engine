@@ -21,8 +21,7 @@ out_types = ['covars', 'raw'] + [corr_type]
 df = pd.read_csv(f'{res_dir}/{config["list_studies"]}')
 list_std = df.Study.tolist()
 
-###################################
-## Set output file names
+# Set output file names
 out_files = expand(f"{out_dir}/{out_dset}_{{rtype}}_{{dtype}}.csv", rtype = roi_types, dtype = out_types)
 
 print("Target result files:" + '\n' + '\n'.join(out_files) + '\n')
@@ -45,7 +44,7 @@ rule rename_rois:
         roi=f"{in_dir}/Studies/{{study}}/{{study}}_{{dtype}}.csv",
         dict=rois
     output:
-        temp(f"{out_dir}/renamed/{{study}}_{{dtype}}.csv")
+        temp(f"{out_dir}/tmp_prep_data/renamed/{{study}}_{{dtype}}.csv")
     params:
         var_from = 'Index',
         var_to = 'Code'
@@ -60,11 +59,11 @@ rule merge_data:
     '''
     input:
         demog=f"{in_dir}/Studies/{{study}}/{{study}}_DemogClin.csv",
-        roi=f"{out_dir}/renamed/{{study}}_{{dtype}}.csv"
+        roi=f"{out_dir}/tmp_prep_data/renamed/{{study}}_{{dtype}}.csv"
     params:
         key_var = 'MRID'
     output:
-        temp(f"{out_dir}/merged/{{study}}_{{dtype}}.csv")
+        temp(f"{out_dir}/tmp_prep_data/merged/{{study}}_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -75,11 +74,11 @@ rule concat_studies:
     Combine studies into a single csv
     '''
     input:
-        expand("{out_dir}/merged/{study}_{{dtype}}.csv", out_dir = out_dir, study=list_std)
+        expand("{out_dir}/tmp_prep_data/merged/{study}_{{dtype}}.csv", out_dir = out_dir, study=list_std)
     params:
         key_var = 'MRID'
     output:
-        temp(f"{out_dir}/combined/combined_{{dtype}}.csv")
+        temp(f"{out_dir}/tmp_prep_data/combined/combined_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -90,9 +89,9 @@ rule qc_ROIs:
     Discard QC fail cases based on distributions
     '''
     input:
-        f"{out_dir}/combined/combined_{{dtype}}.csv"
+        f"{out_dir}/tmp_prep_data/combined/combined_{{dtype}}.csv"
     output:
-        temp(f"{out_dir}/qced/combined_{{dtype}}.csv")
+        temp(f"{out_dir}/tmp_prep_data/qced/combined_{{dtype}}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -103,13 +102,13 @@ rule select_covars:
     Select variables from data
     '''
     input:
-        in_csv=f"{out_dir}/qced/combined_{{dtype}}.csv",
+        in_csv=f"{out_dir}/tmp_prep_data/qced/combined_{{dtype}}.csv",
         dict_csv=covars
     params:
         dict_var = 'Name',
         vars_list = 'MRID',
     output:
-        temp(f"{out_dir}/out_data/combined_{{dtype}}_covars.csv")
+        temp(f"{out_dir}/tmp_prep_data/out_data/combined_{{dtype}}_covars.csv")
     resources:
         mem_mb=8000
     shell:
@@ -120,13 +119,13 @@ rule select_roi_vars:
     Select variables from data
     '''
     input:
-        in_csv=f"{out_dir}/qced/combined_{{dtype}}.csv",
+        in_csv=f"{out_dir}/tmp_prep_data/qced/combined_{{dtype}}.csv",
         dict=rois
     params:
         dict_var = 'Code',
         vars_list = 'MRID',
     output:
-        temp(f"{out_dir}/out_data/combined_{{dtype}}_raw.csv")
+        temp(f"{out_dir}/tmp_prep_data/out_data/combined_{{dtype}}_raw.csv")
     resources:
         mem_mb=8000
     shell:
@@ -137,12 +136,12 @@ rule correct_icv:
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        f"{out_dir}/out_data/combined_{{dtype}}_raw.csv"
+        f"{out_dir}/tmp_prep_data/out_data/combined_{{dtype}}_raw.csv"
     params:
         icv_var = 'MUSE_702',
         exclude_vars = 'MRID',
     output:
-        temp(f"{out_dir}/out_data/combined_{{dtype}}_{corr_type}.csv")
+        temp(f"{out_dir}/tmp_prep_data/out_data/combined_{{dtype}}_{corr_type}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -153,7 +152,7 @@ rule drop_na:
     Drop NAs in final data
     '''
     input:
-        f"{out_dir}/out_data/combined_{{dtype}}.csv"
+        f"{out_dir}/tmp_prep_data/out_data/combined_{{dtype}}.csv"
     output:
         f"{out_dir}/{out_dset}_{{dtype}}.csv"
     resources:
