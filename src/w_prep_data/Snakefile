@@ -1,0 +1,162 @@
+## Import packages
+import pandas as pd
+
+# Flag to indicate rules that will be run locally (e.g. not submitted to slurm)
+#localrules: copy_config, make_sample_list, select_sample, rename_rois, merge_data, rename_rois_subsampled, merge_data_subsampled, concat_studies, select_covars, select_roi_vars, correct_icv
+
+# Default config file 
+configfile: "./config.yaml"
+
+# Read config vars and lists
+in_dir = config["in_dir"]
+out_dir = config["out_dir"]
+out_dset = config["out_dset"]
+res_dir = config["res_dir"]
+rois = f'{res_dir}/{config["list_ROIs"]}'
+covars = f'{res_dir}/{config["list_covars"]}'
+roi_types = config["roi_types"]
+corr_type = config["corr_type"]
+out_types = ['covars', 'raw'] + [corr_type]
+
+df = pd.read_csv(f'{res_dir}/{config["list_studies"]}')
+list_std = df.Study.tolist()
+
+###################################
+## Set output file names
+out_files = expand(f"{out_dir}/{out_dset}_{{rtype}}_{{dtype}}.csv", rtype = roi_types, dtype = out_types)
+
+print("Target result files:" + '\n' + '\n'.join(out_files) + '\n')
+#input()
+
+###################################
+## Rules
+
+rule ALL:
+    '''
+    First rule: lists the final expected out files
+    '''
+    input: out_files
+    
+rule rename_rois:
+    '''
+    Rename MUSE roi indices to roi codes
+    '''
+    input:
+        roi=f"{in_dir}/Studies/{{study}}/{{study}}_{{dtype}}.csv",
+        dict=rois
+    output:
+        temp(f"{out_dir}/renamed/{{study}}_{{dtype}}.csv")
+    params:
+        var_from = 'Index',
+        var_to = 'Code'
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_rename_columns_using_dict.py {input} {params} {output}"
+
+rule merge_data:
+    '''
+    Merge demog data to ROIs
+    '''
+    input:
+        demog=f"{in_dir}/Studies/{{study}}/{{study}}_DemogClin.csv",
+        roi=f"{out_dir}/renamed/{{study}}_{{dtype}}.csv"
+    params:
+        key_var = 'MRID'
+    output:
+        temp(f"{out_dir}/merged/{{study}}_{{dtype}}.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
+
+rule concat_studies:
+    '''
+    Combine studies into a single csv
+    '''
+    input:
+        expand("{out_dir}/merged/{study}_{{dtype}}.csv", out_dir = out_dir, study=list_std)
+    params:
+        key_var = 'MRID'
+    output:
+        temp(f"{out_dir}/combined/combined_{{dtype}}.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_concat_dfs.py {output} {input}"
+
+rule qc_ROIs:
+    '''
+    Discard QC fail cases based on distributions
+    '''
+    input:
+        f"{out_dir}/combined/combined_{{dtype}}.csv"
+    output:
+        temp(f"{out_dir}/qced/combined_{{dtype}}.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_qc_ROIs.py {input} {output}"
+
+rule select_covars:
+    '''
+    Select variables from data
+    '''
+    input:
+        in_csv=f"{out_dir}/qced/combined_{{dtype}}.csv",
+        dict_csv=covars
+    params:
+        dict_var = 'Name',
+        vars_list = 'MRID',
+    output:
+        temp(f"{out_dir}/out_data/combined_{{dtype}}_covars.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
+
+rule select_roi_vars:
+    '''
+    Select variables from data
+    '''
+    input:
+        in_csv=f"{out_dir}/qced/combined_{{dtype}}.csv",
+        dict=rois
+    params:
+        dict_var = 'Code',
+        vars_list = 'MRID',
+    output:
+        temp(f"{out_dir}/out_data/combined_{{dtype}}_raw.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
+
+rule correct_icv:
+    '''
+    Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
+    '''
+    input:
+        f"{out_dir}/out_data/combined_{{dtype}}_raw.csv"
+    params:
+        icv_var = 'MUSE_702',
+        exclude_vars = 'MRID',
+    output:
+        temp(f"{out_dir}/out_data/combined_{{dtype}}_{corr_type}.csv")
+    resources:
+        mem_mb=8000
+    shell:
+        f"python ../../utils/generic/util_corr_icv.py {{input}} {corr_type} {{params}} {{output}}"
+
+rule drop_na:
+    '''
+    Drop NAs in final data
+    '''
+    input:
+        f"{out_dir}/out_data/combined_{{dtype}}.csv"
+    output:
+        f"{out_dir}/{out_dset}_{{dtype}}.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_drop_na.py {input} {output}"
