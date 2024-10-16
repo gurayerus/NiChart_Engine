@@ -1,0 +1,19 @@
+list_covars: lists/covars/list_covar_all.csv
+list_ROIs: dictionaries/MUSE/list_MUSE_single.csv
+list_derived_ROIs: dictionaries/MUSE/list_MUSE_mapping_derived.csv
+sample_SPARE_AD: lists/samples/SPARE/sample_SPARE_AD_all.csv
+sample_SPARE_Age: lists/samples/SPARE/sample_SPARE_Age_all.csv
+sample_SPARE_Diabetes: lists/samples/SPARE/sample_SPARE_Diabetes_all.csv
+sample_SPARE_Hyperlipidemia: lists/samples/SPARE/sample_SPARE_Hyperlipidemia_all.csv
+sample_SPARE_Hypertension: lists/samples/SPARE/sample_SPARE_Hypertension_all.csv
+sample_SPARE_Obesity: lists/samples/SPARE/sample_SPARE_Obesity_all.csv
+sample_SPARE_Smoking: lists/samples/SPARE/sample_SPARE_Smoking_all.csv
+spare_types:
+ - AD
+ - Age
+ - Diabetes
+ - Hyperlipidemia
+ - Hypertension
+ - Obesity
+ - Smoking
+

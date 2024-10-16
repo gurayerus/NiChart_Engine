@@ -8,7 +8,6 @@ data/
 input/
 models/
 output/
-resources/
 slurm_logs/
 .snakemake/
 
