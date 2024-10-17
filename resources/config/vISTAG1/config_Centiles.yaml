@@ -1,0 +1,19 @@
+version: vISTAG1
+config_name: vISTAG1/config_Centiles.yaml
+list_ROIs: vISTAG1/lists/MUSE/list_MUSE_primary.csv
+sample_Centiles_CN: vISTAG1/lists/samples/Centiles/sample_Centiles_BLSA-SHIP_train.csv
+roi_types:
+ - MUSE
+ - DLMUSE
+corr_types:
+ - raw
+ - normICV
+spare_types:
+ - AD
+ - Age
+ - Diabetes
+ - Hyperlipidemia
+ - Hypertension
+ - Obesity
+ - Smoking
+ 

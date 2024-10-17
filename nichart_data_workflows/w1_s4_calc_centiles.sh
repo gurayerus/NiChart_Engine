@@ -2,7 +2,14 @@
 
 # Workflow for preparing initial nichart data:
 
-flag=$1
+num_cores=$1
+flag='run'
+if [ "${num_cores}" == 'dry' ]; then
+    flag='dry'
+fi
+if [ -z $num_cores ]; then
+    num_cores='1'
+fi
 
 b_dir=$(dirname `pwd`)
 s_dir=${b_dir}/src/w_spare
@@ -15,10 +22,10 @@ res_dir=${b_dir}/resources
 
 cd ${s_dir}
 
-if [ "${flag}" == '--dry' ]; then
+if [ "${flag}" == 'dry' ]; then
     python calc_centiles.py --dry_run --in_roi $in_roi --in_demog $in_demog --out_dir $out_dir --out_dset $out_dset --res_dir $res_dir
 else
-    python calc_centiles.py --in_roi $in_roi --in_demog $in_demog --out_dir $out_dir --out_dset $out_dset --res_dir $res_dir
+    python calc_centiles.py --in_roi $in_roi --in_demog $in_demog --out_dir $out_dir --out_dset $out_dset --res_dir $res_dir --num_cores $num_cores
 fi
 
 

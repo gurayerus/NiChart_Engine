@@ -8,13 +8,16 @@ if __name__ == "__main__":
         "--in_dir", help="Provide input folder name", required=True
     )
     parser.add_argument(
+        "--dset_name", help="Provide dataset name", required=True
+    )
+    parser.add_argument(
         "--out_dir", help="Provide output folder name", required=True
     )
     parser.add_argument(
-        "--out_dset", help="Provide output dataset name", required=True
+        "--res_dir", help="Provide folder name with shared resources", required=True
     )
     parser.add_argument(
-        "--res_dir", help="Provide folder name with shared resources", required=True
+        "--num_cores", help="Provide number of cores", required=True
     )
     parser.add_argument(
         "--dry_run", help="Set flag for dry run", action="store_true"
@@ -33,10 +36,11 @@ if __name__ == "__main__":
     if options.dry_run:
         cmd = cmd + " -np"
     cmd = cmd + " --config in_dir=" + options.in_dir
+    cmd = cmd + " dset_name=" + options.dset_name
     cmd = cmd + " out_dir=" + options.out_dir
-    cmd = cmd + " out_dset=" + options.out_dset
     cmd = cmd + " res_dir=" + options.res_dir
-    cmd = cmd + " --cores 1"
+    if not options.dry_run:
+        cmd = cmd + " --cores " + options.num_cores
 
     print("Running cmd: " + cmd)
 

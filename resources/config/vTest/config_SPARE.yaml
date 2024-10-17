@@ -1,0 +1,16 @@
+version: vTest
+dir_input: output/vTest
+dir_output: output/vTest/COMBAT
+#list_ROIs: vTest/lists/MUSE/list_MUSE_primary.csv
+#list_ROIs: vTest/lists/MUSE/list_MUSE_single.csv
+list_ROIs: vTest/lists/MUSE/list_MUSE_short.csv
+sample_SPARE_AD: vTest/lists/samples/SPARE/sample_SPARE_AD_all.csv
+sample_SPARE_Age: vTest/lists/samples/SPARE/sample_SPARE_Age_all.csv
+roi_types:
+ - MUSE
+corr_types:
+ - raw
+spare_types:
+ - AD
+ - Age
+ 

@@ -20,6 +20,9 @@ if __name__ == "__main__":
         "--res_dir", help="Provide folder name with shared resources", required=True
     )
     parser.add_argument(
+        "--num_cores", help="Provide number of cores", required=True
+    )
+    parser.add_argument(
         "--dry_run", help="Set flag for dry run", action="store_true"
     )
 
@@ -40,7 +43,8 @@ if __name__ == "__main__":
     cmd = cmd + " out_dir=" + options.out_dir
     cmd = cmd + " out_dset=" + options.out_dset
     cmd = cmd + " res_dir=" + options.res_dir
-    cmd = cmd + " --cores 1"
+    if not options.dry_run:
+        cmd = cmd + " --cores 1"
 
     print("Running cmd: " + cmd)
 

@@ -12,8 +12,10 @@ configfile: "./config.yaml"
 # Read config vars and lists
 in_roi = config["in_roi"]
 in_demog = config["in_demog"]
+dset_name = config["dset_name"]
 out_dir = config["out_dir"]
-out_dset = config["out_dset"]
+out_mdl = config["out_mdl"]
+out_roi = config["out_roi"]
 res_dir = config["res_dir"]
 rois = f'{res_dir}/{config["list_ROIs"]}'
 derived_rois = f'{res_dir}/{config["list_derived_ROIs"]}'
@@ -21,7 +23,7 @@ sample_train = f'{res_dir}/{config["sample_COMBAT_train"]}'
 sample_test = f'{res_dir}/{config["sample_COMBAT_test"]}'
 
 # Set output file names
-out_files = [f"{out_dir}/{out_dset}_test_harmonized.csv"]
+out_files = [out_mdl, out_roi]
 print("Target out files:" + '\n' + '\n'.join(out_files))
 
 # Rules
@@ -42,7 +44,7 @@ rule merge_data:
     params:
         key_var = 'MRID'
     output:
-        f"{out_dir}/tmp_harmonize/{out_dset}_merged.csv"
+        f"{out_dir}/tmp_harmonize/{dset_name}_merged.csv"
     resources:
         mem_mb=8000
     shell:
@@ -53,13 +55,13 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv=f"{out_dir}/tmp_harmonize/{out_dset}_merged.csv",
+        in_csv=f"{out_dir}/tmp_harmonize/{dset_name}_merged.csv",
         dict_csv=rois
     params:
         dict_var = 'Code',
         covars ='MRID,Age,Sex,SITE,DLICV',
     output:
-        f"{out_dir}/tmp_harmonize/{out_dset}_selvars.csv"
+        f"{out_dir}/tmp_harmonize/{dset_name}_selvars.csv"
     resources:
         mem_mb=8000
     shell:
@@ -71,11 +73,11 @@ rule select_COMBAT_sample_train:
     '''
     input:
         sample_csv=sample_train,
-        data_csv=f"{out_dir}/tmp_harmonize/{out_dset}_selvars.csv"
+        data_csv=f"{out_dir}/tmp_harmonize/{dset_name}_selvars.csv"
     params:
         key_var = 'MRID'
     output:
-        f"{out_dir}/tmp_harmonize/{out_dset}_selvars_train.csv"
+        f"{out_dir}/tmp_harmonize/{dset_name}_selvars_train.csv"
     resources:
         mem_mb=8000
     shell:
@@ -87,11 +89,11 @@ rule select_COMBAT_sample_test:
     '''
     input:
         sample_csv=sample_test,
-        data_csv=f"{out_dir}/tmp_harmonize/{out_dset}_selvars.csv"
+        data_csv=f"{out_dir}/tmp_harmonize/{dset_name}_selvars.csv"
     params:
         key_var = 'MRID'
     output:
-        f"{out_dir}/tmp_harmonize/{out_dset}_selvars_test.csv"
+        f"{out_dir}/tmp_harmonize/{dset_name}_selvars_test.csv"
     resources:
         mem_mb=8000
     shell:
@@ -102,13 +104,13 @@ rule filter_age_COMBAT_sample_test:
     Select sample (using list)
     '''
     input:
-        f"{out_dir}/tmp_harmonize/{out_dset}_selvars_test.csv"
+        f"{out_dir}/tmp_harmonize/{dset_name}_selvars_test.csv"
     params:
         var_name = 'Age',
         min_val = '20',
         max_val = '97'
     output:
-        f"{out_dir}/tmp_harmonize/{out_dset}_selvars_test_filtered.csv"
+        f"{out_dir}/tmp_harmonize/{dset_name}_selvars_test_filtered.csv"
     resources:
         mem_mb=8000
     shell:
@@ -119,7 +121,7 @@ rule COMBAT_train:
     Train COMBAT model
     '''    
     input:
-        f"{out_dir}/tmp_harmonize/{out_dset}_selvars_train.csv"
+        f"{out_dir}/tmp_harmonize/{dset_name}_selvars_train.csv"
     params:
         batch='SITE',
         vkey='MRID',
@@ -127,8 +129,8 @@ rule COMBAT_train:
         vcat='Sex',
         vspline='Age',
     output:
-        mdl=f"{out_dir}/{out_dset}_train_COMBATModel.pkl.gz",
-        csv=f"{out_dir}/{out_dset}_train_harmonized.csv",
+        mdl=out_mdl,
+        csv=f"{out_dir}/{dset_name}_train_harmonized.csv",
     resources:
         mem_mb=16000
     shell:
@@ -139,10 +141,10 @@ rule COMBAT_apply:
     Apply COMBAT model to calculate harmonized values
     '''    
     input:
-        data=f"{out_dir}/tmp_harmonize/{out_dset}_selvars_test_filtered.csv",
-        mdl=f"{out_dir}/{out_dset}_train_COMBATModel.pkl.gz",
+        data=f"{out_dir}/tmp_harmonize/{dset_name}_selvars_test_filtered.csv",
+        mdl=out_mdl,
     output:
-        f"{out_dir}/tmp_harmonize/{out_dset}_selvars_test_filtered_harmonized.csv"
+        f"{out_dir}/tmp_harmonize/{dset_name}_selvars_test_filtered_harmonized.csv"
     resources:
         mem_mb=16000
     shell:
@@ -155,13 +157,13 @@ rule calc_derived_ROIs:
     - If the input data already includes derived ROIs, they will not be updated
     '''        
     input:
-        in_csv=f"{out_dir}/tmp_harmonize/{out_dset}_selvars_test_filtered_harmonized.csv",
+        in_csv=f"{out_dir}/tmp_harmonize/{dset_name}_selvars_test_filtered_harmonized.csv",
         dict=derived_rois
     params:
         key_var='MRID',
         roi_prefix='MUSE_'
     output:
-        f"{out_dir}/{out_dset}_test_harmonized.csv"
+        out_roi
     resources:
         mem_mb=8000
     shell:

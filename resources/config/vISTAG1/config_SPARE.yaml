@@ -1,0 +1,22 @@
+version: vISTAG1
+config_name: vISTAG1/config_SPARE.yaml
+list_ROIs: vISTAG1/lists/MUSE/list_MUSE_single.csv
+sample_SPARE_AD: vISTAG1/lists/samples/SPARE/sample_SPARE_AD_all.csv
+sample_SPARE_Age: vISTAG1/lists/samples/SPARE/sample_SPARE_Age_all.csv
+sample_SPARE_Diabetes: vISTAG1/lists/samples/SPARE/sample_SPARE_Diabetes_all.csv
+sample_SPARE_Hyperlipidemia: vISTAG1/lists/samples/SPARE/sample_SPARE_Hyperlipidemia_all.csv
+sample_SPARE_Hypertension: vISTAG1/lists/samples/SPARE/sample_SPARE_Hypertension_all.csv
+sample_SPARE_Obesity: vISTAG1/lists/samples/SPARE/sample_SPARE_Obesity_all.csv
+sample_SPARE_Smoking: vISTAG1/lists/samples/SPARE/sample_SPARE_Smoking_all.csv
+roi_types:
+ - DLMUSE
+corr_types:
+ - raw
+spare_types:
+ - AD
+ - Age
+ - Diabetes
+ - Hyperlipidemia
+ - Hypertension
+ - Obesity
+ - Smoking

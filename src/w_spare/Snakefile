@@ -20,7 +20,6 @@ out_files = [f"{out_dir}/tmp_spare/out_data_all/{out_dset}_SPARE-ALL.csv"]
 print("Target out files:" + '\n' + '\n'.join(out_files))
 
 print(config)
-input()
 
 # Rules
 

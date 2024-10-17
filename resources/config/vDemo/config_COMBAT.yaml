@@ -1,0 +1,14 @@
+version: vDemo
+config_name: config_vDemo_COMBAT.yaml
+dir_input: vDemo/prep_data
+dir_output: vDemo/COMBAT
+list_ROIs: lists/MUSE/list_MUSE_single.csv
+#list_ROIs: lists/MUSE/list_MUSE_primary.csv
+sample_COMBAT_train: lists/samples/COMBAT/sample_COMBAT_ISTAG_train.csv
+sample_COMBAT_test: lists/samples/COMBAT/sample_COMBAT_ISTAG_all.csv
+roi_types:
+ - MUSE
+ - DLMUSE
+corr_types:
+ - raw
+# - normICV
