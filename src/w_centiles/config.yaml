@@ -1,0 +1,17 @@
+list_covars: lists/covars/list_covar_all.csv
+list_ROIs: dictionaries/MUSE/list_MUSE_primary.csv
+sample_Centiles_CN: dictionaries/samples/Centiles/sample_Centiles_BLSA-SHIP_train.csv
+roi_types:
+ - MUSE
+ - DLMUSE
+corr_type:
+ - raw
+ - normICV
+spare_types:
+ - AD
+ - Age
+ - Diabetes
+ - Hyperlipidemia
+ - Hypertension
+ - Obesity
+ - Smoking

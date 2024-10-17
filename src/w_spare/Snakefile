@@ -19,6 +19,9 @@ derived_rois = f'{res_dir}/{config["list_derived_ROIs"]}'
 out_files = [f"{out_dir}/tmp_spare/out_data_all/{out_dset}_SPARE-ALL.csv"]
 print("Target out files:" + '\n' + '\n'.join(out_files))
 
+print(config)
+input()
+
 # Rules
 
 rule ALL:
@@ -156,16 +159,12 @@ rule sparesvm_test_all:
     shell:
         "bash ../../utils/spare/util_spare_test.sh {input} {wildcards.stype} {output}"
       
-def get_spare_results(wildcards):
-    data_spare=expand(f"{out_dir}/tmp_spare/out_data/{out_dset}_SPARE-{{stype}}.csv", stype = config["spare_types"])
-    return data_spare
-
 rule sparesvm_merge_all:
     '''
     Merge SPARE scores
     '''
     input:
-        data=get_spare_results
+        data=expand(f"{out_dir}/tmp_spare/out_data/{out_dset}_SPARE-{{stype}}.csv", stype = config["spare_types"])
     output:
         f"{out_dir}/tmp_spare/out_data_all/{out_dset}_SPARE-ALL.csv"
     resources:

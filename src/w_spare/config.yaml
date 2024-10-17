@@ -11,9 +11,3 @@ sample_SPARE_Smoking: lists/samples/SPARE/sample_SPARE_Smoking_all.csv
 spare_types:
  - AD
  - Age
- - Diabetes
- - Hyperlipidemia
- - Hypertension
- - Obesity
- - Smoking
-
