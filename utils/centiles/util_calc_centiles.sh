@@ -15,7 +15,8 @@ mkdir -pv ${out_tmp}
 
 for sel_var in `head -1 $in_csv | cut -d, -f3- | sed 's/,/ /g'`; do
     echo "Calculating centiles for: $sel_var"
-    cmd="Rscript ../../utils/centiles/util_calc_centiles.r -i $in -o $out -t $var -c $cent -b $bin -v"
+    out_var=${out_tmp}/centiles_${sel_var}.csv
+    cmd="Rscript ../../utils/centiles/util_calc_centiles.r -i $in_csv -o $out_var -t $sel_var -c $cent_vals -b $bin_size -v -v -v"
     echo "About to run: $cmd"
     $cmd
 done
