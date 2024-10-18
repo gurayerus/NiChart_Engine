@@ -14,14 +14,18 @@ out_dir = config["out_dir"]
 res_dir = config["res_dir"]
 rois = f'{res_dir}/{config["list_ROIs"]}'
 covars = f'{res_dir}/{config["list_covars"]}'
-roi_types = config["roi_types"]
+roi_type = config["roi_type"]
 corr_type = config["corr_type"]
 
 df = pd.read_csv(f'{res_dir}/{config["list_studies"]}')
 list_std = df.Study.tolist()
 
 # Set output file names
-out_files = expand(f"{out_dir}/{dset_name}_{{rtype}}_{{stype}}.csv", rtype = roi_types, stype = ['covars', 'raw', corr_type])
+out_files = [
+    f"{out_dir}/covars/{dset_name}_{roi_type}_covars.csv",
+    f"{out_dir}/data/{dset_name}_{roi_type}_raw.csv", 
+    f"{out_dir}/data/{dset_name}_{roi_type}_{corr_type}.csv"
+]
 
 #print("Target result files:" + '\n' + '\n'.join(out_files) + '\n')
 print(out_files)
@@ -40,10 +44,10 @@ rule rename_rois:
     Rename MUSE roi indices to roi codes
     '''
     input:
-        roi=f"{in_dir}/Studies/{{study}}/{{study}}_{{rtype}}.csv",
+        roi=f"{in_dir}/Studies/{{study}}/{{study}}_{roi_type}.csv",
         dict=rois
     output:
-        temp(f"{out_dir}/tmp_prep_data/renamed/{{study}}_{{rtype}}.csv")
+        temp(f"{out_dir}/tmp_prep_data/renamed/{{study}}_{roi_type}.csv")
     params:
         var_from = 'Index',
         var_to = 'Code'
@@ -58,11 +62,11 @@ rule merge_data:
     '''
     input:
         demog=f"{in_dir}/Studies/{{study}}/{{study}}_DemogClin.csv",
-        roi=f"{out_dir}/tmp_prep_data/renamed/{{study}}_{{rtype}}.csv"
+        roi=f"{out_dir}/tmp_prep_data/renamed/{{study}}_{roi_type}.csv"
     params:
         key_var = 'MRID'
     output:
-        temp(f"{out_dir}/tmp_prep_data/merged/{{study}}_{{rtype}}.csv")
+        temp(f"{out_dir}/tmp_prep_data/merged/{{study}}_{roi_type}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -73,11 +77,11 @@ rule concat_studies:
     Combine studies into a single csv
     '''
     input:
-        expand("{out_dir}/tmp_prep_data/merged/{study}_{{rtype}}.csv", out_dir = out_dir, study=list_std)
+        expand(f"{out_dir}/tmp_prep_data/merged/{{study}}_{roi_type}.csv", study=list_std)
     params:
         key_var = 'MRID'
     output:
-        temp(f"{out_dir}/tmp_prep_data/combined/combined_{{rtype}}.csv")
+        temp(f"{out_dir}/tmp_prep_data/combined/combined_{roi_type}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -88,9 +92,9 @@ rule qc_ROIs:
     Discard QC fail cases based on distributions
     '''
     input:
-        f"{out_dir}/tmp_prep_data/combined/combined_{{rtype}}.csv"
+        f"{out_dir}/tmp_prep_data/combined/combined_{roi_type}.csv"
     output:
-        temp(f"{out_dir}/tmp_prep_data/qced/combined_{{rtype}}.csv")
+        temp(f"{out_dir}/tmp_prep_data/qced/combined_{roi_type}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -101,14 +105,14 @@ rule select_covars:
     Select variables from data
     '''
     input:
-        in_csv = f"{out_dir}/tmp_prep_data/qced/combined_{{rtype}}.csv",
+        in_csv = f"{out_dir}/tmp_prep_data/qced/combined_{roi_type}.csv",
         dict_csv = covars
     params:
         key_col = 'MRID',
         cols_keep = 'MRID',
         dict_col = 'Name',
     output:
-        temp(f"{out_dir}/tmp_prep_data/out_data/combined_{{rtype}}_covars.csv")
+        f"{out_dir}/covars/{dset_name}_{roi_type}_covars.csv"
     resources:
         mem_mb=8000
     shell:
@@ -119,14 +123,14 @@ rule select_roi_vars:
     Select variables from data
     '''
     input:
-        in_csv = f"{out_dir}/tmp_prep_data/qced/combined_{{rtype}}.csv",
+        in_csv = f"{out_dir}/tmp_prep_data/qced/combined_{roi_type}.csv",
         dict_csv = rois
     params:
         key_col = 'MRID',
         cols_keep = 'MRID',
         dict_col = 'Code',
     output:
-        temp(f"{out_dir}/tmp_prep_data/out_data/combined_{{rtype}}_raw.csv")
+        temp(f"{out_dir}/tmp_prep_data/out_data/combined_{roi_type}_raw.csv")
     resources:
         mem_mb=8000
     shell:
@@ -137,12 +141,12 @@ rule correct_icv:
     Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
     '''
     input:
-        f"{out_dir}/tmp_prep_data/out_data/combined_{{rtype}}_raw.csv"
+        f"{out_dir}/tmp_prep_data/out_data/combined_{roi_type}_raw.csv"
     params:
         icv_var = 'MUSE_702',
         exclude_vars = 'MRID',
     output:
-        temp(f"{out_dir}/tmp_prep_data/out_data/combined_{{rtype}}_{corr_type}.csv")
+        temp(f"{out_dir}/tmp_prep_data/out_data/combined_{roi_type}_{corr_type}.csv")
     resources:
         mem_mb=8000
     shell:
@@ -153,9 +157,9 @@ rule drop_na:
     Drop NAs in final data
     '''
     input:
-        f"{out_dir}/tmp_prep_data/out_data/combined_{{rtype}}.csv"
+        f"{out_dir}/tmp_prep_data/out_data/combined_{{dtype}}.csv"
     output:
-        f"{out_dir}/{dset_name}_{{rtype}}.csv"
+        f"{out_dir}/data/{dset_name}_{{dtype}}.csv"
     resources:
         mem_mb=8000
     shell:
