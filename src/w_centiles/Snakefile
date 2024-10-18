@@ -11,6 +11,8 @@ dset_name = config["dset_name"]
 out_dir = config["out_dir"]
 out_csv = config["out_csv"]
 res_dir = config["res_dir"]
+cent_vals = config["cent_vals"]
+bin_size = config["bin_size"]
 sample_cn = f'{res_dir}/{config["sample_centiles_CN"]}'
 
 # Set output file names
@@ -68,32 +70,9 @@ rule calc_centiles:
     input:
         f"{out_dir}/tmp_centiles/merged/{dset_name}_all.csv"
     output:
-        f"{out_dir}/tmp_centiles/centiles/{dset_name}_all.csv"
+        out_csv
     params:
-        cent_vals='5,25,50,75,95',
-        bin_size='1',
+        cent_vals = cent_vals,
+        bin_size = bin_size,
     shell:
         "bash ../../utils/centiles/util_calc_centiles.sh {input} {params} {output}"
-
-#def get_centile_files(wildcards):
-    #'''
-    #Returns a list of centile csv files for all rois for a specific study
-    #'''
-    #cent_files = expand(f"../../data/{dir_output}/c_{wildcards.centtype}/centiles_single/combined_{wildcards.dtype}_{wildcards.ctype}_var{{cvar}}.csv", cvar = LIST_VAR)
-    #return cent_files
-
-#rule combine_centiles:
-    #input:
-        #get_centile_files
-    #output:
-        #f"../../data/{dir_output}/c_{{centtype}}/centiles_combined/combined_{{dtype}}_{{ctype}}_centiles.csv"
-    #shell:
-        #"bash ../../utils/centiles/util_combine_centiles.sh {output} {input}"
-
-####rule copy_centiles:
-    ####input:
-        ####"../../data/centiles/centiles-{csample}_combined.csv"
-    ####output:
-        ####protected("../../models/centiles/centiles-{csample}_combined.csv")
-    ####shell:
-        ####"bash ./utils/util_combine_centiles.sh {output} {input}"

@@ -1,3 +1,5 @@
 sample_centiles_CN: lists/samples/centiles/sample_centiles_CN-BLSA-SHIP.csv
+cent_vals: 5,25,50,75,95
+bin_size: 1
 centile_types:
  - CN
