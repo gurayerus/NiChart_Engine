@@ -12,6 +12,6 @@ cmd="spare_score -a test -i $in_csv -m $model -o ${out_csv%.csv}_tmpout.csv"
 echo "About to run: $cmd"
 $cmd
 
-## Change column name, remove first (index) column
-sed "s/SPARE_score/SPARE${stype}/g" ${out_csv%.csv}_tmpout.csv | cut -d, -f2- > $out_csv
+## Change column name
+sed "s/SPARE_score/SPARE${stype}/g" ${out_csv%.csv}_tmpout.csv > $out_csv
 rm -rf ${out_csv%.csv}_tmpout.csv

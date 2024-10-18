@@ -48,7 +48,7 @@ if __name__ == "__main__":
     cmd = cmd + " out_csv=" + options.out_csv
     cmd = cmd + " res_dir=" + options.res_dir
     if not options.dry_run:
-        cmd = cmd + " --cores options.num_cores"
+        cmd = cmd + " --cores " + options.num_cores
 
     print("Running cmd: " + cmd)
 
