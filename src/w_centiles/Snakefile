@@ -15,6 +15,7 @@ sample_cn = f'{res_dir}/{config["sample_centiles_CN"]}'
 
 # Set output file names
 out_csv = f"{out_dir}/tmp_centiles/merged/{dset_name}_all.csv"
+out_csv = f"{out_dir}/tmp_centiles/centiles/{dset_name}_all.csv"
 out_files = [out_csv]
 print("Target out files:" + '\n' + '\n'.join(out_files))
 
@@ -63,16 +64,16 @@ rule prepare_sample:
     #path_centiles=res_dir + '/' + config["sample_centiles_" + wildcards.ctype]
     #return path_centiles
 
-rule calc_centiles_single_var:
+rule calc_centiles:
     input:
-        f"../../data/{dir_output}/c_{{centtype}}/data/combined_{{dtype}}_{{ctype}}_all.csv"
+        f"{out_dir}/tmp_centiles/merged/{dset_name}_all.csv"
     output:
-        f"../../data/{dir_output}/c_{{centtype}}/centiles_single/combined_{{dtype}}_{{ctype}}_var{{cvar}}.csv"
+        f"{out_dir}/tmp_centiles/centiles/{dset_name}_all.csv"
     params:
         cent_vals='5,25,50,75,95',
         bin_size='1',
     shell:
-        "bash ../../utils/centiles/util_calc_centiles_single.sh {input} {wildcards.cvar} {params} {output}"
+        "bash ../../utils/centiles/util_calc_centiles.sh {input} {params} {output}"
 
 #def get_centile_files(wildcards):
     #'''
