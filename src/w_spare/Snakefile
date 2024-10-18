@@ -28,22 +28,39 @@ rule ALL:
     '''
     input: out_files
 
-rule select_vars:
+rule merge_data:
     '''
-    Select variables from data
+    Merge demog data to ROIs
     '''
     input:
-        in_csv=in_roi,
-        dict_csv=rois
+        demog = in_demog,
+        roi = in_roi
     params:
-        dict_var = 'Code',
-        covars ='MRID,Age,Sex,DLICV',
+        key_var = 'MRID'
+    output:
+        f"{out_dir}/tmp_spare/sel_vars/{dset_name}_withcovars.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
+
+rule select_vars:
+    '''
+    Select vars
+    '''
+    input:
+        in_csv = f"{out_dir}/tmp_spare/sel_vars/{dset_name}_withcovars.csv",
+        dict_csv = rois
+    params:
+        key_col = 'MRID',
+        cols_keep = 'MRID,Age,Sex,DLICV',
+        dict_col = 'Code',
     output:
         f"{out_dir}/tmp_spare/sel_vars/{dset_name}_selvars.csv"
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_cols_using_dict.py {input.in_csv} {params.key_col} {params.cols_keep} {input.dict_csv} {params.dict_col} {output}"
 
 def get_spare_sample(wildcards):
     path_spare = config["sample_SPARE_" + wildcards.stype]
@@ -148,7 +165,7 @@ rule sparesvm_test_all:
     Test SPARE model using the complete data
     '''
     input:
-        data=f"{out_dir}/tmp_spare/sel_sample/{dset_name}_sample_{{stype}}_renamed.csv",
+        data=f"{out_dir}/tmp_spare/sel_vars/{dset_name}_selvars.csv",
         model=f"{out_dir}/tmp_spare/out_models/{dset_name}_SPARE-{{stype}}_Model.pkl.gz"
     output:
         f"{out_dir}/tmp_spare/out_data/{dset_name}_SPARE-{{stype}}.csv",

@@ -101,34 +101,36 @@ rule select_covars:
     Select variables from data
     '''
     input:
-        in_csv=f"{out_dir}/tmp_prep_data/qced/combined_{{rtype}}.csv",
-        dict_csv=covars
+        in_csv = f"{out_dir}/tmp_prep_data/qced/combined_{{rtype}}.csv",
+        dict_csv = covars
     params:
-        dict_var = 'Name',
-        vars_list = 'MRID',
+        key_col = 'MRID',
+        cols_keep = 'MRID',
+        dict_col = 'Name',
     output:
         temp(f"{out_dir}/tmp_prep_data/out_data/combined_{{rtype}}_covars.csv")
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_cols_using_dict.py {input.in_csv} {params.key_col} {params.cols_keep} {input.dict_csv} {params.dict_col} {output}"
 
 rule select_roi_vars:
     '''
     Select variables from data
     '''
     input:
-        in_csv=f"{out_dir}/tmp_prep_data/qced/combined_{{rtype}}.csv",
-        dict=rois
+        in_csv = f"{out_dir}/tmp_prep_data/qced/combined_{{rtype}}.csv",
+        dict_csv = rois
     params:
-        dict_var = 'Code',
-        vars_list = 'MRID',
+        key_col = 'MRID',
+        cols_keep = 'MRID',
+        dict_col = 'Code',
     output:
         temp(f"{out_dir}/tmp_prep_data/out_data/combined_{{rtype}}_raw.csv")
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_cols_using_dict.py {input.in_csv} {params.key_col} {params.cols_keep} {input.dict_csv} {params.dict_col} {output}"
 
 rule correct_icv:
     '''

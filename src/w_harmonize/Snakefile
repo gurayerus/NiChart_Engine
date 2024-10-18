@@ -55,17 +55,18 @@ rule select_vars:
     Select variables from data
     '''
     input:
-        in_csv=f"{out_dir}/tmp_harmonize/{dset_name}_merged.csv",
-        dict_csv=rois
+        in_csv = f"{out_dir}/tmp_harmonize/{dset_name}_merged.csv",
+        dict_csv = rois
     params:
-        dict_var = 'Code',
-        covars ='MRID,Age,Sex,SITE,DLICV',
+        key_col = 'MRID',
+        cols_keep = 'MRID,Age,Sex,SITE,DLICV',
+        dict_col = 'Code',
     output:
         f"{out_dir}/tmp_harmonize/{dset_name}_selvars.csv"
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_cols_using_dict.py {input.in_csv} {params.key_col} {params.cols_keep} {input.dict_csv} {params.dict_col} {output}"
 
 rule select_COMBAT_sample_train:
     '''
