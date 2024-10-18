@@ -18,7 +18,7 @@ in_data=${b_dir}/data/output/vTEST/ISTAG_DLMUSE_SPARE-ALL.csv
 in_demog=${b_dir}/data/output/vTEST/ISTAG_DLMUSE_covars.csv
 dset_name='ISTAG'
 out_dir=${b_dir}/data/output/vTEST
-out_csv=${b_dir}/data/output/vTEST/ISTAG_DLMUSE_SPARE-ALL_Centiles.csv
+out_pref=${b_dir}/data/output/vTEST/ISTAG_DLMUSE_SPARE-ALL_Centiles.csv
 res_dir=${b_dir}/resources
 
 cd ${s_dir}

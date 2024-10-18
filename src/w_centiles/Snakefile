@@ -11,13 +11,12 @@ dset_name = config["dset_name"]
 out_dir = config["out_dir"]
 out_csv = config["out_csv"]
 res_dir = config["res_dir"]
-cent_vals = config["cent_vals"]
+centile_vals = config["centile_vals"]
 bin_size = config["bin_size"]
 sample_cn = f'{res_dir}/{config["sample_centiles_CN"]}'
+centile_types = config["centile_types"]
 
 # Set output file names
-out_csv = f"{out_dir}/tmp_centiles/merged/{dset_name}_all.csv"
-out_csv = f"{out_dir}/tmp_centiles/centiles/{dset_name}_all.csv"
 out_files = [out_csv]
 print("Target out files:" + '\n' + '\n'.join(out_files))
 
@@ -45,34 +44,35 @@ rule select_rois:
     shell:
         "python ../../utils/generic/util_select_cols.py {input} {params} {output}"
 
+def get_centiles_sample(wildcards):
+    path_centiles = res_dir + '/' + config["sample_centiles_" + wildcards.ctype]
+    return path_centiles
+
 rule prepare_sample:
     '''
     Merge demog data to ROIs
     '''
     input:
-        sample = sample_cn,
+        sample = get_centiles_sample,
         demog = f"{out_dir}/tmp_centiles/sel_vars/{dset_name}_demog.csv",
         data = in_data
     params:
         key_col = 'MRID'    
     output:
-        f"{out_dir}/tmp_centiles/merged/{dset_name}_all.csv"
+        f"{out_dir}/tmp_centiles/merged/{dset_name}_sample{ctype}.csv"
     resources:
         mem_mb=8000
     shell:
         "python ../../utils/generic/util_merge_dfs_multi.py {output} {params} {input}"
 
-#def get_centiles_sample(wildcards):
-    #path_centiles=res_dir + '/' + config["sample_centiles_" + wildcards.ctype]
-    #return path_centiles
 
 rule calc_centiles:
     input:
-        f"{out_dir}/tmp_centiles/merged/{dset_name}_all.csv"
+        f"{out_dir}/tmp_centiles/merged/{dset_name}_sample{ctype}.csv"
     output:
-        out_csv
+        f{out_pref} + _sample{ctype}.csv"
     params:
-        cent_vals = cent_vals,
+        centile_vals = centile_vals,
         bin_size = bin_size,
     shell:
         "bash ../../utils/centiles/util_calc_centiles.sh {input} {params} {output}"

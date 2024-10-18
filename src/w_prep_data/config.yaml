@@ -4,6 +4,5 @@ list_ROIs: dictionaries/MUSE/list_MUSE_all.csv
 #list_studies: lists/studies/list_studies_ISTAGING.csv
 list_studies: lists/studies/list_studies_test.csv
 roi_types:
- - MUSE
  - DLMUSE
 corr_type: normICV

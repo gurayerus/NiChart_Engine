@@ -1,5 +1,10 @@
-sample_centiles_CN: lists/samples/centiles/sample_centiles_CN-BLSA-SHIP.csv
-cent_vals: 5,25,50,75,95
+centile_vals: 5,25,50,75,95
 bin_size: 1
+sample_centiles_CN: lists/samples/centiles/sample_centiles_CN-BLSA-SHIP.csv
+sample_centiles_CNM: lists/samples/centiles/sample_centiles_CN-Male-BLSA-SHIP.csv
+sample_centiles_CNF: lists/samples/centiles/sample_centiles_CN-Female-BLSA-SHIP.csv
 centile_types:
  - CN
+ - CNM
+ - CNF
+
