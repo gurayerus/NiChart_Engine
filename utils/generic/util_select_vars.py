@@ -4,7 +4,6 @@ import json
 import sys
 
 def select_vars(in_csv, dict_csv, dict_var, vars_list, out_csv):
-
     """
     Select variables from data file
     Variables are provided as a combination of 
@@ -38,6 +37,60 @@ def select_vars(in_csv, dict_csv, dict_var, vars_list, out_csv):
 
     # Write out file
     df_out.to_csv(out_csv, index=False)
+
+def select_vars_from_dict(in_csv, dict_csv, dict_var, vars_list, out_csv):
+    """
+    Select variables from data file
+    Variables are provided as a combination of
+    - variables from a dictionary (e.g. for ROI names)
+    - and a comma separated list of var names (e.g. for other variables, Age,Sex,etc)
+    """
+
+    # Read input files
+    df = pd.read_csv(in_csv, dtype = {'MRID':str})
+    dfd = pd.read_csv(dict_csv)
+
+    # Convert columns of dataframe to str (to handle numeric ROI indices)
+    df.columns = df.columns.astype(str)
+
+    # Get variable lists (input var list + rois)
+    vars_list = vars_list.split(',')
+    dict_vars = dfd[dict_var].astype(str).tolist()
+
+    # Remove duplicate vars (in case a variable is both in roi list and input var list)
+    vars_list = [x for x in vars_list if x not in dict_vars]
+
+    # Make a list of selected variables
+    sel_vars = vars_list + dict_vars
+
+    # Remove vars that are not in the dataframe
+    df_vars = df.columns.tolist()
+    sel_vars = [x for x in sel_vars if x in df_vars]
+
+    # Select variables
+    df_out = df[sel_vars]
+
+    # Write out file
+    df_out.to_csv(out_csv, index=False)
+
+def select_vars_from_list(in_csv, vars_list, out_csv):
+    """
+    Select variables from data file
+    """
+
+    # Read input files
+    df = pd.read_csv(in_csv, dtype = {'MRID':str})
+
+    # Get variable lists (input var list + rois)
+    vars_list = vars_list.split(',')
+    vars_list = [x for x in df.columns]
+
+    # Select variables
+    df = df[sel_vars]
+
+    # Write out file
+    df.to_csv(out_csv, index=False)
+
 
 if __name__ == "__main__":
     # Access arguments from command line using sys.argv

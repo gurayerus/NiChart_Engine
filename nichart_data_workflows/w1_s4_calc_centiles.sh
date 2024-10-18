@@ -14,18 +14,19 @@ fi
 b_dir=$(dirname `pwd`)
 s_dir=${b_dir}/src/w_spare
 
-in_roi=${b_dir}/data/output/ISTAGING-v1.2/ISTAG_train_harmonized.csv
-in_demog=${b_dir}/data/output/ISTAGING-v1.2/ISTAG_DLMUSE_covars.csv
-out_dir=${b_dir}/data/output/ISTAGING-v1.2
-out_dset='ISTAG'
+in_data=${b_dir}/data/output/vTEST/ISTAG_DLMUSE_SPARE-ALL.csv
+in_demog=${b_dir}/data/output/vTEST/ISTAG_DLMUSE_covars.csv
+dset_name='ISTAG'
+out_csv=${b_dir}/data/output/vTEST/ISTAG_DLMUSE_SPARE-ALL_Centiles.csv
 res_dir=${b_dir}/resources
 
 cd ${s_dir}
 
 if [ "${flag}" == 'dry' ]; then
-    python calc_centiles.py --dry_run --in_roi $in_roi --in_demog $in_demog --out_dir $out_dir --out_dset $out_dset --res_dir $res_dir
+    python calc_centiles.py --dry_run --in_data $in_data --in_demog $in_demog --dset_name $dset_name --out_dir $out_dir --out_csv $out_csv --res_dir $res_dir
+
 else
-    python calc_centiles.py --in_roi $in_roi --in_demog $in_demog --out_dir $out_dir --out_dset $out_dset --res_dir $res_dir --num_cores $num_cores
+    python calc_centiles.py --in_data $in_data --in_demog $in_demog --dset_name $dset_name --out_dir $out_dir --out_csv $out_csv --res_dir $res_dir --num_cores $num_cores
 fi
 
 

@@ -7,15 +7,16 @@ configfile: "./config.yaml"
 # Read config vars and lists
 in_roi = config["in_roi"]
 in_demog = config["in_demog"]
+dset_name = config["dset_name"]
 out_dir = config["out_dir"]
-out_dset = config["out_dset"]
+out_csv = config["out_csv"]
 res_dir = config["res_dir"]
 rois = f'{res_dir}/{config["list_ROIs"]}'
 derived_rois = f'{res_dir}/{config["list_derived_ROIs"]}'
 
 # Set output file names
-out_files = []
-print("Target out files:" + '\n' + '\n'.join(out_files) + '\n')
+out_files = [out_csv]
+print("Target out files:" + '\n' + '\n'.join(out_files))
 
 # Rules
 
@@ -30,45 +31,30 @@ rule select_rois:
     Select variables from data
     '''
     input:
-        in_csv=f"../../data/{dir_input_data}/combined_{{dtype}}_{{ctype}}_COMBAT.csv", 
-        dict_csv=expand("../../config/{rois}", rois = config["list_ROIs"])
+        in_roi=in_roi,
     params:
-        dict_var = 'Code',
-        covars ='MRID',
+        vars='MRID,Age',
     output:
-        f"../../data/{dir_output}/merged_vars/combined_{{dtype}}_{{ctype}}_selrois.csv"
+        f"{out_dir}/tmp_centiles/sel_vars/{dset_name}_selvars.csv"
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/generic/util_select_vars.py {input} {params} {output}"
-
-rule merge_spare_to_rois:
-    '''
-    Select variables from data
-    '''
-    input:
-        in_csv1=f"../../data/{dir_output}/merged_vars/combined_{{dtype}}_{{ctype}}_selrois.csv",
-        in_csv2=f"../../data/{dir_input_spare}/combined_{{dtype}}_{{ctype}}_SPARE-ALL.csv", 
-    output:
-        "../../data/{dir_output}/merged_vars/combined_{dtype}_{ctype}_selrois+spare.csv"
-    resources:
-        mem_mb=8000
-    shell:
-        "python ../../utils/generic/util_merge_dfs.py {input} MRID {output}"
+        "python ../../utils/generic/util_select_vars_from_list.py {input} {params} {output}"
 
 def get_centiles_sample(wildcards):
-    path_centiles='../../config/' + config["sample_Centiles_" + wildcards.ctype]
+    path_centiles=res_dir + '/' + config["sample_centiles_" + wildcards.ctype]
     return path_centiles
 
-rule select_Centiles_sample:
+rule select_centiles_sample:
     '''
     Select MRID and Age for the specific centile sample
     '''
     input:
-        demog=f"../../data/{dir_input_covar}/combined_{{dtype}}_covars.csv",
+        demog=in_demog,
         sample=get_centiles_sample,
     output:
         "../../data/{dir_output}/c_{ctype}/data/combined_{dtype}_covars.csv"
+        f"{out_dir}/tmp_centiles/samples/{dset_name}_selvars_cent{ctype}.csv"
     params:
         in_vars = 'MRID,Age'
     shell:

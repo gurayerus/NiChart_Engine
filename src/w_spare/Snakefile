@@ -20,8 +20,6 @@ derived_rois = f'{res_dir}/{config["list_derived_ROIs"]}'
 out_files = [out_csv]
 print("Target out files:" + '\n' + '\n'.join(out_files))
 
-print(config)
-
 # Rules
 
 rule ALL:
