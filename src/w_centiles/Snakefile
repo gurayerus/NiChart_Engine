@@ -5,16 +5,16 @@ import pandas as pd
 configfile: "./config.yaml"
 
 # Read config vars and lists
-in_roi = config["in_roi"]
+in_data = config["in_data"]
 in_demog = config["in_demog"]
 dset_name = config["dset_name"]
 out_dir = config["out_dir"]
 out_csv = config["out_csv"]
 res_dir = config["res_dir"]
-rois = f'{res_dir}/{config["list_ROIs"]}'
-derived_rois = f'{res_dir}/{config["list_derived_ROIs"]}'
+sample_cn = f'{res_dir}/{config["sample_centiles_CN"]}'
 
 # Set output file names
+out_csv = f"{out_dir}/tmp_centiles/merged/{dset_name}_all.csv"
 out_files = [out_csv]
 print("Target out files:" + '\n' + '\n'.join(out_files))
 
@@ -31,49 +31,38 @@ rule select_rois:
     Select variables from data
     '''
     input:
-        in_roi=in_roi,
+        in_csv = in_demog
     params:
-        vars='MRID,Age',
+        key_col = 'MRID',
+        cols_keep = 'MRID,Age',
     output:
-        f"{out_dir}/tmp_centiles/sel_vars/{dset_name}_selvars.csv"
+        f"{out_dir}/tmp_centiles/sel_vars/{dset_name}_demog.csv"
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/generic/util_select_vars_from_list.py {input} {params} {output}"
+        "python ../../utils/generic/util_select_cols.py {input} {params} {output}"
 
-def get_centiles_sample(wildcards):
-    path_centiles=res_dir + '/' + config["sample_centiles_" + wildcards.ctype]
-    return path_centiles
-
-rule select_centiles_sample:
+rule prepare_sample:
     '''
-    Select MRID and Age for the specific centile sample
+    Merge demog data to ROIs
     '''
     input:
-        demog=in_demog,
-        sample=get_centiles_sample,
-    output:
-        "../../data/{dir_output}/c_{ctype}/data/combined_{dtype}_covars.csv"
-        f"{out_dir}/tmp_centiles/samples/{dset_name}_selvars_cent{ctype}.csv"
+        sample = sample_cn,
+        demog = f"{out_dir}/tmp_centiles/sel_vars/{dset_name}_demog.csv",
+        data = in_data
     params:
-        in_vars = 'MRID,Age'
-    shell:
-        "python ../../utils/centiles/util_select_centile_sample.py {input} {params} {output}"    
-
-rule merge_data:
-    '''
-    Merge data
-    '''
-    input:
-        in_csv1=f"../../data/{dir_output}/c_{{centtype}}/data/combined_{{dtype}}_covars.csv",
-        in_csv2=f"../../data/{dir_output}/merged_vars/combined_{{dtype}}_{{ctype}}_selrois+spare.csv"
+        key_col = 'MRID'    
     output:
-        f"../../data/{dir_output}/c_{{centtype}}/data/combined_{{dtype}}_{{ctype}}_all.csv"
+        f"{out_dir}/tmp_centiles/merged/{dset_name}_all.csv"
     resources:
         mem_mb=8000
     shell:
-        "python ../../utils/generic/util_merge_dfs.py {input} MRID {output}"
-    
+        "python ../../utils/generic/util_merge_dfs_multi.py {output} {params} {input}"
+
+#def get_centiles_sample(wildcards):
+    #path_centiles=res_dir + '/' + config["sample_centiles_" + wildcards.ctype]
+    #return path_centiles
+
 rule calc_centiles_single_var:
     input:
         f"../../data/{dir_output}/c_{{centtype}}/data/combined_{{dtype}}_{{ctype}}_all.csv"
@@ -85,25 +74,25 @@ rule calc_centiles_single_var:
     shell:
         "bash ../../utils/centiles/util_calc_centiles_single.sh {input} {wildcards.cvar} {params} {output}"
 
-def get_centile_files(wildcards):
-    '''
-    Returns a list of centile csv files for all rois for a specific study
-    '''
-    cent_files = expand(f"../../data/{dir_output}/c_{wildcards.centtype}/centiles_single/combined_{wildcards.dtype}_{wildcards.ctype}_var{{cvar}}.csv", cvar = LIST_VAR)
-    return cent_files
+#def get_centile_files(wildcards):
+    #'''
+    #Returns a list of centile csv files for all rois for a specific study
+    #'''
+    #cent_files = expand(f"../../data/{dir_output}/c_{wildcards.centtype}/centiles_single/combined_{wildcards.dtype}_{wildcards.ctype}_var{{cvar}}.csv", cvar = LIST_VAR)
+    #return cent_files
 
-rule combine_centiles:
-    input:
-        get_centile_files
-    output:
-        f"../../data/{dir_output}/c_{{centtype}}/centiles_combined/combined_{{dtype}}_{{ctype}}_centiles.csv"
-    shell:
-        "bash ../../utils/centiles/util_combine_centiles.sh {output} {input}"
+#rule combine_centiles:
+    #input:
+        #get_centile_files
+    #output:
+        #f"../../data/{dir_output}/c_{{centtype}}/centiles_combined/combined_{{dtype}}_{{ctype}}_centiles.csv"
+    #shell:
+        #"bash ../../utils/centiles/util_combine_centiles.sh {output} {input}"
 
-###rule copy_centiles:
-    ###input:
-        ###"../../data/centiles/centiles-{csample}_combined.csv"
-    ###output:
-        ###protected("../../models/centiles/centiles-{csample}_combined.csv")
-    ###shell:
-        ###"bash ./utils/util_combine_centiles.sh {output} {input}"
+####rule copy_centiles:
+    ####input:
+        ####"../../data/centiles/centiles-{csample}_combined.csv"
+    ####output:
+        ####protected("../../models/centiles/centiles-{csample}_combined.csv")
+    ####shell:
+        ####"bash ./utils/util_combine_centiles.sh {output} {input}"
