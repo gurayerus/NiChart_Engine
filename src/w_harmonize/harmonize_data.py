@@ -26,7 +26,7 @@ if __name__ == "__main__":
         "--res_dir", help="Provide folder name with shared resources", required=True
     )
     parser.add_argument(
-        "--num_cores", help="Provide number of cores", required=True
+        "--num_cores", help="Provide number of cores", required=False
     )
     parser.add_argument(
         "--dry_run", help="Set flag for dry run", action="store_true"

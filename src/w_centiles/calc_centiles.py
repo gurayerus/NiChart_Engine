@@ -5,19 +5,16 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--in_data", help="Provide input roi file name", required=True
+        "--in_dir", help="Provide input data folder name", required=True
     )
     parser.add_argument(
         "--in_demog", help="Provide input demog file name", required=True
     )
     parser.add_argument(
-        "--dset_name", help="Provide input dataset name", required=True
+        "--dset_name", help="Provide output dataset name", required=True
     )
     parser.add_argument(
         "--out_dir", help="Provide output folder name", required=True
-    )
-    parser.add_argument(
-        "--out_csv", help="Provide output roi name", required=True
     )
     parser.add_argument(
         "--res_dir", help="Provide folder name with shared resources", required=True
@@ -41,11 +38,10 @@ if __name__ == "__main__":
     cmd = "snakemake"
     if options.dry_run:
         cmd = cmd + " -np"
-    cmd = cmd + " --config in_data=" + options.in_data
+    cmd = cmd + " --config in_dir=" + options.in_dir
     cmd = cmd + " in_demog=" + options.in_demog
     cmd = cmd + " dset_name=" + options.dset_name
     cmd = cmd + " out_dir=" + options.out_dir
-    cmd = cmd + " out_csv=" + options.out_csv
     cmd = cmd + " res_dir=" + options.res_dir
     if not options.dry_run:
         cmd = cmd + " --cores 1"

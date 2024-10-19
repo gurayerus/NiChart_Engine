@@ -131,7 +131,7 @@ rule COMBAT_train:
         vspline='Age',
     output:
         mdl=out_mdl,
-        csv=f"{out_dir}/{dset_name}_train_harmonized.csv",
+        csv=f"{out_dir}/tmp_harmonize/{dset_name}_train_harmonized.csv",
     resources:
         mem_mb=16000
     shell:

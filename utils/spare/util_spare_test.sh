@@ -13,5 +13,5 @@ echo "About to run: $cmd"
 $cmd
 
 ## Change column name
-sed "s/SPARE_score/SPARE${stype}/g" ${out_csv%.csv}_tmpout.csv > $out_csv
+sed "s/SPARE_score/SPARE-${stype}/g" ${out_csv%.csv}_tmpout.csv > $out_csv
 rm -rf ${out_csv%.csv}_tmpout.csv

@@ -12,6 +12,7 @@ in_demog = config["in_demog"]
 dset_name = config["dset_name"]
 out_dir = config["out_dir"]
 out_csv = config["out_csv"]
+out_mdl_pref = config["out_mdl_pref"]
 res_dir = config["res_dir"]
 rois = f'{res_dir}/{config["list_ROIs"]}'
 derived_rois = f'{res_dir}/{config["list_derived_ROIs"]}'
@@ -126,7 +127,7 @@ rule sparesvm_train:
         vkey='MRID',
         target = 'Target'
     output:
-        f"{out_dir}/tmp_spare/out_models/{dset_name}_SPARE-{{stype}}_Model.pkl.gz"
+        f"{out_mdl_pref}-{{stype}}.pkl.gz"
     resources:
         mem_mb=16000
     shell:
@@ -138,7 +139,7 @@ rule sparesvm_test:
     '''
     input:
         data=f"{out_dir}/tmp_spare/train_test/{dset_name}_sample_{{stype}}_test.csv",
-        model=f"{out_dir}/tmp_spare/out_models/{dset_name}_SPARE-{{stype}}_Model.pkl.gz"
+        model=f"{out_mdl_pref}-{{stype}}.pkl.gz"
     output:
         f"{out_dir}/tmp_spare/pred_test/{dset_name}_test_SPARE-{{stype}}.csv",
     resources:
@@ -166,7 +167,7 @@ rule sparesvm_test_all:
     '''
     input:
         data=f"{out_dir}/tmp_spare/sel_vars/{dset_name}_selvars.csv",
-        model=f"{out_dir}/tmp_spare/out_models/{dset_name}_SPARE-{{stype}}_Model.pkl.gz"
+        model=f"{out_mdl_pref}-{{stype}}.pkl.gz"
     output:
         f"{out_dir}/tmp_spare/out_data/{dset_name}_SPARE-{{stype}}.csv",
     resources:

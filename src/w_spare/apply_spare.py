@@ -20,6 +20,9 @@ if __name__ == "__main__":
         "--out_csv", help="Provide output file name", required=True
     )
     parser.add_argument(
+        "--out_mdl_pref", help="Provide output file name", required=True
+    )
+    parser.add_argument(
         "--res_dir", help="Provide folder name with shared resources", required=True
     )
     parser.add_argument(
@@ -46,6 +49,7 @@ if __name__ == "__main__":
     cmd = cmd + " dset_name=" + options.dset_name
     cmd = cmd + " out_dir=" + options.out_dir
     cmd = cmd + " out_csv=" + options.out_csv
+    cmd = cmd + " out_mdl_pref=" + options.out_mdl_pref
     cmd = cmd + " res_dir=" + options.res_dir
     if not options.dry_run:
         cmd = cmd + " --cores " + options.num_cores

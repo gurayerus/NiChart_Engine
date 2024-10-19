@@ -5,19 +5,17 @@ import pandas as pd
 configfile: "./config.yaml"
 
 # Read config vars and lists
-in_data = config["in_data"]
+in_dir = config["in_dir"]
 in_demog = config["in_demog"]
 dset_name = config["dset_name"]
 out_dir = config["out_dir"]
-out_csv = config["out_csv"]
 res_dir = config["res_dir"]
 centile_vals = config["centile_vals"]
 bin_size = config["bin_size"]
-sample_cn = f'{res_dir}/{config["sample_centiles_CN"]}'
 centile_types = config["centile_types"]
 
 # Set output file names
-out_files = [out_csv]
+out_files = expand(f"{out_dir}/centiles/{dset_name}_DLMUSE_raw_harmonized_centiles{{ctype}}.csv", ctype = centile_types)
 print("Target out files:" + '\n' + '\n'.join(out_files))
 
 # Rules
@@ -55,11 +53,11 @@ rule prepare_sample:
     input:
         sample = get_centiles_sample,
         demog = f"{out_dir}/tmp_centiles/sel_vars/{dset_name}_demog.csv",
-        data = in_data
+        data = f"{in_dir}/{dset_name}_{{dtype}}.csv"
     params:
         key_col = 'MRID'    
     output:
-        f"{out_dir}/tmp_centiles/merged/{dset_name}_sample{ctype}.csv"
+        f"{out_dir}/tmp_centiles/merged/{dset_name}_{{dtype}}_sample{{ctype}}.csv"
     resources:
         mem_mb=8000
     shell:
@@ -68,9 +66,9 @@ rule prepare_sample:
 
 rule calc_centiles:
     input:
-        f"{out_dir}/tmp_centiles/merged/{dset_name}_sample{ctype}.csv"
+        f"{out_dir}/tmp_centiles/merged/{dset_name}_{{dtype}}_sample{{ctype}}.csv"
     output:
-        f{out_pref} + _sample{ctype}.csv"
+        f"{out_dir}/centiles/{dset_name}_{{dtype}}_centiles{{ctype}}.csv"
     params:
         centile_vals = centile_vals,
         bin_size = bin_size,
