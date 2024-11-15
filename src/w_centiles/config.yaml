@@ -3,6 +3,7 @@ bin_size: 1
 sample_centiles_CN: lists/samples/centiles/sample_centiles_CN-BLSA-SHIP.csv
 sample_centiles_CNM: lists/samples/centiles/sample_centiles_CN-Male-BLSA-SHIP.csv
 sample_centiles_CNF: lists/samples/centiles/sample_centiles_CN-Female-BLSA-SHIP.csv
+list_rois: dictionaries/MUSE/list_MUSE_all.csv
 centile_types:
  - CN
  - CNM
