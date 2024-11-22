@@ -14,10 +14,10 @@ fi
 b_dir=$(dirname `pwd`)
 s_dir=${b_dir}/src/w_centiles
 
-in_dir=${b_dir}/data/output/vTEST/data
-in_demog=${b_dir}/data/output/vTEST/covars/ISTAG_DLMUSE_covars.csv
+in_dir=${b_dir}/data/output/ISTAGING-v1.2/data
+in_demog=${b_dir}/data/output/ISTAGING-v1.2/covars/ISTAG_DLMUSE_covars.csv
 dset_name='ISTAG'
-out_dir=${b_dir}/data/output/vTEST
+out_dir=${b_dir}/data/output/ISTAGING-v1.2
 res_dir=${b_dir}/resources
 
 cd ${s_dir}

@@ -14,12 +14,12 @@ fi
 b_dir=$(dirname `pwd`)
 s_dir=${b_dir}/src/w_spare
 
-in_roi=${b_dir}/data/output/vTEST/data/ISTAG_DLMUSE_raw_harmonized.csv
-in_demog=${b_dir}/data/output/vTEST/covars/ISTAG_DLMUSE_covars.csv
+in_roi=${b_dir}/data/output/ISTAGING-v1.2/data/ISTAG_DLMUSE_raw_harmonized.csv
+in_demog=${b_dir}/data/output/ISTAGING-v1.2/covars/ISTAG_DLMUSE_covars.csv
 dset_name='ISTAG'
-out_dir=${b_dir}/data/output/vTEST
-out_csv=${b_dir}/data/output/vTEST/data/ISTAG_DLMUSE_raw_SPARE-ALL.csv
-out_mdl_pref=${b_dir}/data/output/vTEST/models/ISTAG_DLMUSE_raw_mdlSPARE
+out_dir=${b_dir}/data/output/ISTAGING-v1.2
+out_csv=${b_dir}/data/output/ISTAGING-v1.2/data/ISTAG_DLMUSE_raw_SPARE-ALL.csv
+out_mdl_pref=${b_dir}/data/output/ISTAGING-v1.2/models/ISTAG_DLMUSE_raw_mdlSPARE
 res_dir=${b_dir}/resources
 
 cd ${s_dir}
