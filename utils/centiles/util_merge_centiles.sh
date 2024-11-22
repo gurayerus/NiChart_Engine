@@ -9,5 +9,5 @@ shift
 
 for arg in "$@"; do
     echo "Adding: $arg"
-    tail $arg >> $out_csv
+    sed 1d $arg >> $out_csv
 done

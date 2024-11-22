@@ -1,0 +1,86 @@
+## Import packages
+import pandas as pd
+
+# Default config file 
+configfile: "./config.yaml"
+
+# Read config vars and lists
+in_dir = config["in_dir"]
+dset_name = config["dset_name"]
+out_dir = config["out_dir"]
+res_dir = config["res_dir"]
+rois = f'{res_dir}/{config["list_ROIs"]}'
+covars = f'{res_dir}/{config["list_covars"]}'
+roi_type = config["roi_type"]
+corr_type = config["corr_type"]
+in_demog = config["in_demog"]
+
+df = pd.read_csv(f'{res_dir}/{config["list_studies"]}')
+list_std = df.Study.tolist()
+
+# Set output file names
+out_files = [
+    f"{out_dir}/data/{dset_name}_{roi_type}_raw_harmonized_normICV.csv"
+]
+
+#print("Target result files:" + '\n' + '\n'.join(out_files) + '\n')
+print(out_files)
+
+###################################
+## Rules
+
+rule ALL:
+    '''
+    First rule: lists the final expected out files
+    '''
+    input: out_files
+
+rule merge_data:
+    '''
+    Merge demog data to ROIs
+    '''
+    input:
+        demog = in_demog,
+        roi = f"{out_dir}/data/{dset_name}_{roi_type}_raw_harmonized.csv"
+    params:
+        key_var = 'MRID'
+    output:
+        f"{out_dir}/tmp_post_harm/{dset_name}_withcovars.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_merge_dfs.py {input} {params} {output}"
+
+rule select_vars:
+    '''
+    Select vars
+    '''
+    input:
+        in_csv = f"{out_dir}/tmp_post_harm/{dset_name}_withcovars.csv",
+        dict_csv = rois
+    params:
+        key_col = 'MRID',
+        cols_keep = 'MRID,DLICV',
+        dict_col = 'Code',
+    output:
+        f"{out_dir}/tmp_post_harm/{dset_name}_selvars.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        "python ../../utils/generic/util_select_cols_using_dict.py {input.in_csv} {params.key_col} {params.cols_keep} {input.dict_csv} {params.dict_col} {output}"
+   
+rule correct_icv:
+    '''
+    Normalize ROIs. Values are scaled either by a constant factor (NormICV) or 100 (PercICV)
+    '''
+    input:
+        f"{out_dir}/tmp_post_harm/{dset_name}_selvars.csv"
+    params:
+        icv_var = 'DLICV',
+        exclude_vars = 'MRID',
+    output:
+        f"{out_dir}/data/{dset_name}_{roi_type}_raw_harmonized_normICV.csv"
+    resources:
+        mem_mb=8000
+    shell:
+        f"python ../../utils/generic/util_corr_icv.py {{input}} {corr_type} {{params}} {{output}}"

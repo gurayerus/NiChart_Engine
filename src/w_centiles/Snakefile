@@ -14,16 +14,17 @@ centile_vals = config["centile_vals"]
 bin_size = config["bin_size"]
 centile_types = config["centile_types"]
 list_rois = config["list_rois"]
+rois = f'{res_dir}/{config["list_rois"]}'
 
 # Set output file names
-out_files = expand(f"{out_dir}/centiles/{dset_name}_DLMUSE_raw_harmonized_centiles{{ctype}}.csv", ctype = centile_types)
-out_files = expand(f"{out_dir}/tmp_centiles/rois/{dset_name}_DLMUSE_raw_harmonized_centiles{{ctype}}_roiMUSE_701.csv", ctype = centile_types)
-out_files = expand(f"{out_dir}/centiles/{dset_name}_DLMUSE_raw_harmonized_centiles{{ctype}}.csv", ctype = centile_types)
+out_files = expand(f"{out_dir}/centiles_renamed/{dset_name}_DLMUSE_raw_harmonized_centiles{{ctype}}.csv", ctype = centile_types)
+out_files = expand(f"{out_dir}/centiles_renamed/{dset_name}_DLMUSE_raw_harmonized_normICV_centiles{{ctype}}.csv", ctype = centile_types)
 print("Target out files:" + '\n' + '\n'.join(out_files))
 
 # Read list of rois
 df_roi = pd.read_csv(res_dir + '/' + list_rois)
 roi_types = df_roi.Code.tolist()
+roi_types[0] = 'DLICV'          # MUSE_702 is renamed as DLICV in processed data
 
 # Rules
 
@@ -41,7 +42,7 @@ rule select_rois:
         in_csv = in_demog
     params:
         key_col = 'MRID',
-        cols_keep = 'MRID,Age',
+        cols_keep = 'MRID,Age,DLICV',
     output:
         f"{out_dir}/tmp_centiles/sel_vars/{dset_name}_demog.csv"
     resources:
@@ -88,9 +89,6 @@ rule calc_centiles:
 
 def get_roi_centiles(wildcards):
     list_csv = expand(f"{out_dir}/centiles/rois/{dset_name}_{wildcards.dtype}_centiles{wildcards.ctype}_roi{{roi}}.csv", roi = roi_types)
-    
-    print(list_csv)
-    
     return list_csv
 
 rule merge_centiles:
@@ -100,3 +98,13 @@ rule merge_centiles:
         f"{out_dir}/centiles/{dset_name}_{{dtype}}_centiles{{ctype}}.csv"
     shell:
         "bash ../../utils/centiles/util_merge_centiles.sh {output} {input}"
+
+rule rename_rois:
+    input: 
+        f"{out_dir}/centiles/{dset_name}_{{dtype}}_centiles{{ctype}}.csv",
+        rois
+    output:
+        f"{out_dir}/centiles_renamed/{dset_name}_{{dtype}}_centiles{{ctype}}.csv"
+    shell:
+        "python ../../utils/centiles/util_rename_rois.py {input} {output}"
+
