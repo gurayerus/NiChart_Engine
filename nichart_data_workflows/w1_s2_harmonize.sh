@@ -14,13 +14,25 @@ fi
 b_dir=$(dirname `pwd`)
 s_dir=${b_dir}/src/w_harmonize
 
-in_roi=${b_dir}/data/output/ISTAGING-v1.2/data/ISTAG_DLMUSE_raw.csv
-in_demog=${b_dir}/data/output/ISTAGING-v1.2/covars/ISTAG_DLMUSE_covars.csv
+#######################################################
+
+# in_roi=${b_dir}/data/output/ISTAGING-v1.2/data/ISTAG_DLMUSE_raw.csv
+# in_demog=${b_dir}/data/output/ISTAGING-v1.2/covars/ISTAG_DLMUSE_covars.csv
+# dset_name='ISTAG'
+# out_dir=${b_dir}/data/output/ISTAGING-v1.2
+# out_mdl=${b_dir}/data/output/ISTAGING-v1.2/models/ISTAG_DLMUSE_raw_mdlCOMBAT.pkl.gz
+# out_roi=${b_dir}/data/output/ISTAGING-v1.2/data/ISTAG_DLMUSE_raw_harmonized.csv
+# res_dir=${b_dir}/resources
+
+in_roi=${b_dir}/data/output/NiChartPaper/data/ISTAG_DLMUSE_raw.csv
+in_demog=${b_dir}/data/output/NiChartPaper/covars/ISTAG_DLMUSE_covars.csv
 dset_name='ISTAG'
-out_dir=${b_dir}/data/output/ISTAGING-v1.2
-out_mdl=${b_dir}/data/output/ISTAGING-v1.2/models/ISTAG_DLMUSE_raw_mdlCOMBAT.pkl.gz
-out_roi=${b_dir}/data/output/ISTAGING-v1.2/data/ISTAG_DLMUSE_raw_harmonized.csv
+out_dir=${b_dir}/data/output/NiChartPaper
+out_mdl=${b_dir}/data/output/NiChartPaper/models/ISTAG_DLMUSE_raw_mdlCOMBAT.pkl.gz
+out_roi=${b_dir}/data/output/NiChartPaper/data/ISTAG_DLMUSE_raw_harmonized.csv
 res_dir=${b_dir}/resources
+
+#######################################################
 
 cd ${s_dir}
 

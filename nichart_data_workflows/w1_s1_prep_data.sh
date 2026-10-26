@@ -14,10 +14,20 @@ fi
 b_dir=$(dirname `pwd`)
 s_dir=${b_dir}/src/w_prep_data
 
+#######################################################
+
+# in_dir=${b_dir}/data/input/ISTAGING-v1.2
+# dset_name='ISTAG'
+# out_dir=${b_dir}/data/output/ISTAGING-v1.2
+# res_dir=${b_dir}/resources
+
 in_dir=${b_dir}/data/input/ISTAGING-v1.2
 dset_name='ISTAG'
-out_dir=${b_dir}/data/output/ISTAGING-v1.2
+out_dir=${b_dir}/data/output/NiChartPaper
 res_dir=${b_dir}/resources
+
+#######################################################
+
 
 cd ${s_dir}
 
